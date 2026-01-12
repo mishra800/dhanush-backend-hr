@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import { format } from 'date-fns';
 import { useToast } from '../../hooks/usetoast';
 import { ToastContainer } from '../../components/toast';
+import logo from '../../assets/logo.png';
 
 export default function CandidateDashboard() {
   const [searchParams] = useSearchParams();
@@ -58,8 +59,11 @@ export default function CandidateDashboard() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Candidate Portal</h2>
-          <p className="text-gray-600 mb-4">Enter your email to track your applications</p>
+          <div className="text-center mb-6">
+            <img src={logo} alt="Company Logo" className="h-16 w-auto mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900">Candidate Portal</h2>
+            <p className="text-gray-600 mt-2">Enter your email to track your applications</p>
+          </div>
           <form onSubmit={(e) => {
             e.preventDefault();
             const formEmail = e.target.email.value;
@@ -100,6 +104,9 @@ export default function CandidateDashboard() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="text-center mb-4">
+              <img src={logo} alt="Company Logo" className="h-16 w-auto mx-auto mb-4" />
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Candidate Portal</h1>

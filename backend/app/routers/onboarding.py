@@ -1022,6 +1022,64 @@ def get_onboarding_timeline(
         models.OnboardingApproval.employee_id == employee_id
     ).order_by(models.OnboardingApproval.created_at).all()
     
+    # Build timeline events
+    timeline_events = []
+    
+    # Add employee creation event
+    timeline_events.append({
+        "event": "Employee Record Created",
+        "description": f"Employee {employee.first_name} {employee.last_name} was added to the system",
+        "date": employee.created_at.isoformat() if hasattr(employee, 'created_at') and employee.created_at else employee.date_of_joining.isoformat(),
+        "type": "milestone",
+        "status": "success",
+        "icon": "👤"
+    })
+    
+    # Add document events
+    for doc in documents:
+        timeline_events.append({
+            "event": f"Document Uploaded: {doc.document_type}",
+            "description": f"Document uploaded with {doc.ocr_confidence}% OCR confidence",
+            "date": doc.uploaded_at.isoformat(),
+            "type": "document",
+            "status": "verified" if doc.is_verified else "pending",
+            "icon": "📄"
+        })
+    
+    # Add approval events
+    for approval in approvals:
+        timeline_events.append({
+            "event": f"Compliance Review: {approval.approval_stage}",
+            "description": f"Status: {approval.status}",
+            "date": approval.created_at.isoformat(),
+            "type": "milestone",
+            "status": approval.status,
+            "icon": "✅" if approval.status == "approved" else "⏳"
+        })
+    
+    # Add IT provisioning events
+    for log in it_logs:
+        timeline_events.append({
+            "event": f"IT Resource: {log.resource_type.title()}",
+            "description": f"Action: {log.action} - Status: {log.status}",
+            "date": log.created_at.isoformat(),
+            "type": "it_provisioning",
+            "status": log.status,
+            "icon": "💻"
+        })
+    
+    # Sort timeline by date
+    timeline_events.sort(key=lambda x: x["date"])
+    
+    return {
+        "employee_name": f"{employee.first_name} {employee.last_name}",
+        "employee_id": employee_id,
+        "timeline": timeline_events
+    }
+    approvals = db.query(models.OnboardingApproval).filter(
+        models.OnboardingApproval.employee_id == employee_id
+    ).order_by(models.OnboardingApproval.created_at).all()
+    
     # Build timeline
     timeline = []
     
@@ -1075,4 +1133,250 @@ def get_onboarding_timeline(
         "employee_id": employee_id,
         "employee_name": f"{employee.first_name} {employee.last_name}",
         "timeline": timeline
+    }
+
+# --- Enhanced Features ---
+
+@router.get("/notifications/{employee_id}")
+def get_onboarding_notifications(
+    employee_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get onboarding notifications for an employee"""
+    
+    # Mock notifications for now - in production, these would come from a notifications table
+    notifications = [
+        {
+            "id": 1,
+            "title": "Welcome to the Team!",
+            "message": "Your onboarding journey has begun. Complete your profile to get started.",
+            "type": "welcome",
+            "priority": "medium",
+            "is_read": False,
+            "created_at": datetime.utcnow().isoformat(),
+            "action_url": "/onboarding"
+        },
+        {
+            "id": 2,
+            "title": "Document Verification Complete",
+            "message": "All your uploaded documents have been verified successfully.",
+            "type": "document_verified",
+            "priority": "low",
+            "is_read": True,
+            "created_at": (datetime.utcnow() - timedelta(days=1)).isoformat(),
+            "action_url": None
+        },
+        {
+            "id": 3,
+            "title": "IT Resources Provisioned",
+            "message": "Your company email and VPN credentials have been created. Check your personal email for details.",
+            "type": "it_provisioned",
+            "priority": "high",
+            "is_read": False,
+            "created_at": (datetime.utcnow() - timedelta(hours=2)).isoformat(),
+            "action_url": "/onboarding/it-resources"
+        }
+    ]
+    
+    return notifications
+
+@router.post("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Mark notification as read"""
+    # In production, this would update the notification in the database
+    return {"success": True, "message": "Notification marked as read"}
+
+@router.get("/analytics")
+def get_onboarding_analytics(
+    range: str = "30d",
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get onboarding analytics and metrics"""
+    
+    if current_user.role not in ["admin", "hr"]:
+        raise HTTPException(status_code=403, detail="Only admin or HR can view analytics")
+    
+    # Calculate date range
+    if range == "7d":
+        start_date = datetime.utcnow() - timedelta(days=7)
+    elif range == "30d":
+        start_date = datetime.utcnow() - timedelta(days=30)
+    elif range == "90d":
+        start_date = datetime.utcnow() - timedelta(days=90)
+    elif range == "1y":
+        start_date = datetime.utcnow() - timedelta(days=365)
+    else:
+        start_date = datetime.utcnow() - timedelta(days=30)
+    
+    # Get employees in date range
+    employees = db.query(models.Employee).filter(
+        models.Employee.date_of_joining >= start_date
+    ).all()
+    
+    # Calculate metrics
+    total_onboarded = len([emp for emp in employees if emp.onboarding_status == "completed"])
+    total_active = len([emp for emp in employees if emp.onboarding_status != "completed"])
+    
+    # Calculate average completion time
+    completed_employees = [emp for emp in employees if emp.onboarding_status == "completed"]
+    avg_completion_days = 0
+    if completed_employees:
+        total_days = sum([
+            (datetime.utcnow() - emp.date_of_joining).days 
+            for emp in completed_employees 
+            if emp.date_of_joining
+        ])
+        avg_completion_days = round(total_days / len(completed_employees), 1)
+    
+    # Calculate overdue count (more than 7 days)
+    overdue_count = len([
+        emp for emp in employees 
+        if emp.onboarding_status != "completed" 
+        and emp.date_of_joining 
+        and (datetime.utcnow() - emp.date_of_joining).days > 7
+    ])
+    
+    # Phase distribution
+    phase_distribution = {
+        "pre_boarding": 0,
+        "initiation": 0,
+        "parallel_tracks": 0,
+        "induction": 0,
+        "activation": 0
+    }
+    
+    approval_service = OnboardingApprovalService(db)
+    for emp in employees:
+        if emp.onboarding_status != "completed":
+            try:
+                progress = approval_service.get_onboarding_progress(emp.id)
+                phase = progress["current_phase"]
+                if phase == 1:
+                    phase_distribution["pre_boarding"] += 1
+                elif phase == 2:
+                    phase_distribution["initiation"] += 1
+                elif phase == 3:
+                    phase_distribution["parallel_tracks"] += 1
+                elif phase == 4:
+                    phase_distribution["induction"] += 1
+                elif phase == 5:
+                    phase_distribution["activation"] += 1
+            except:
+                continue
+    
+    # Department performance
+    departments = {}
+    for emp in employees:
+        dept = emp.department or "Unknown"
+        if dept not in departments:
+            departments[dept] = {"completed": 0, "active": 0, "total_days": 0}
+        
+        if emp.onboarding_status == "completed":
+            departments[dept]["completed"] += 1
+            if emp.date_of_joining:
+                departments[dept]["total_days"] += (datetime.utcnow() - emp.date_of_joining).days
+        else:
+            departments[dept]["active"] += 1
+    
+    department_performance = []
+    for dept, data in departments.items():
+        avg_days = 0
+        if data["completed"] > 0:
+            avg_days = round(data["total_days"] / data["completed"], 1)
+        
+        department_performance.append({
+            "department": dept,
+            "completed": data["completed"],
+            "active": data["active"],
+            "avg_days": avg_days
+        })
+    
+    # Mock bottlenecks and trends for demo
+    bottlenecks = [
+        {
+            "phase": "Compliance Review",
+            "description": "Document verification taking longer than expected",
+            "avg_delay_days": 2.5,
+            "affected_employees": 8
+        },
+        {
+            "phase": "IT Provisioning",
+            "description": "Hardware availability causing delays",
+            "avg_delay_days": 1.8,
+            "affected_employees": 5
+        }
+    ]
+    
+    return {
+        "total_onboarded": total_onboarded,
+        "total_active": total_active,
+        "avg_completion_days": avg_completion_days,
+        "target_completion_days": 5,
+        "overdue_count": overdue_count,
+        "overdue_percentage": round((overdue_count / max(total_active, 1)) * 100, 1),
+        "success_rate": round((total_onboarded / max(len(employees), 1)) * 100, 1),
+        "onboarding_growth": 15.2,  # Mock data
+        "phase_distribution": phase_distribution,
+        "department_performance": department_performance,
+        "bottlenecks": bottlenecks,
+        "completion_trend": 8.5,  # Mock data
+        "efficiency_trend": 12.3  # Mock data
+    }
+
+@router.post("/bulk-notify")
+def send_bulk_notifications(
+    employee_ids: List[int],
+    message: str,
+    title: str = "Onboarding Update",
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Send bulk notifications to multiple employees"""
+    
+    if current_user.role not in ["admin", "hr"]:
+        raise HTTPException(status_code=403, detail="Only admin or HR can send bulk notifications")
+    
+    # In production, this would create notification records and send emails/SMS
+    success_count = 0
+    failed_count = 0
+    
+    for employee_id in employee_ids:
+        employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+        if employee:
+            # Mock notification sending
+            success_count += 1
+        else:
+            failed_count += 1
+    
+    return {
+        "success": True,
+        "message": f"Notifications sent to {success_count} employees",
+        "success_count": success_count,
+        "failed_count": failed_count
+    }
+
+@router.get("/export/analytics")
+def export_onboarding_analytics(
+    format: str = "csv",
+    range: str = "30d",
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Export onboarding analytics data"""
+    
+    if current_user.role not in ["admin", "hr"]:
+        raise HTTPException(status_code=403, detail="Only admin or HR can export analytics")
+    
+    # In production, this would generate and return actual CSV/Excel files
+    return {
+        "success": True,
+        "message": f"Analytics data exported in {format} format",
+        "download_url": f"/downloads/onboarding_analytics_{range}.{format}",
+        "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat()
     }

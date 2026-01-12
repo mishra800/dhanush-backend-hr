@@ -3,7 +3,7 @@
   command = "npm run build"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20.19.0"
 
 [[redirects]]
   from = "/*"
@@ -11,10 +11,10 @@
   status = 200
 
 [context.production.environment]
-  VITE_API_BASE_URL = "https://your-backend-domain.vercel.app"
+  VITE_API_BASE_URL = "https://hr-backened-dhanush.vercel.app"
 
 [context.deploy-preview.environment]
-  VITE_API_BASE_URL = "https://your-backend-domain.vercel.app"
+  VITE_API_BASE_URL = "https://hr-backened-dhanush.vercel.app"
 
 [context.branch-deploy.environment]
-  VITE_API_BASE_URL = "https://your-backend-domain.vercel.app"
+  VITE_API_BASE_URL = "https://hr-backened-dhanush.vercel.app"

@@ -40,8 +40,17 @@ export default function Performance() {
   const [engagementText, setEngagementText] = useState('');
   const [engagementResult, setEngagementResult] = useState(null);
 
+  // New state for enhanced features
+  const [performanceScore, setPerformanceScore] = useState(null);
+  const [performanceTrends, setPerformanceTrends] = useState(null);
+  const [performanceInsights, setPerformanceInsights] = useState(null);
+  const [kpiData, setKpiData] = useState(null);
+  const [teamAnalytics, setTeamAnalytics] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     fetchProfile();
+    fetchPerformanceData();
   }, []);
 
   const fetchProfile = async () => {
@@ -50,6 +59,34 @@ export default function Performance() {
       setEmployee(res.data);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const fetchPerformanceData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current employee ID
+      const empResponse = await api.get('/onboarding/my-employee-id');
+      const empId = empResponse.data.employee_id;
+      
+      // Fetch comprehensive performance data
+      const [scoreRes, trendsRes, insightsRes, kpiRes] = await Promise.all([
+        api.get(`/performance/employee/${empId}/score`).catch(() => null),
+        api.get(`/performance/employee/${empId}/trends`).catch(() => null),
+        api.get(`/performance/employee/${empId}/insights`).catch(() => null),
+        api.get(`/performance/kpis/employee/${empId}`).catch(() => null)
+      ]);
+      
+      if (scoreRes) setPerformanceScore(scoreRes.data);
+      if (trendsRes) setPerformanceTrends(trendsRes.data);
+      if (insightsRes) setPerformanceInsights(insightsRes.data);
+      if (kpiRes) setKpiData(kpiRes.data);
+      
+    } catch (error) {
+      console.error('Error fetching performance data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,34 +141,293 @@ export default function Performance() {
 
   // Renderers
   const renderDashboard = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
-        <h3 className="text-gray-500 text-sm font-bold uppercase">Avg Performance</h3>
-        <p className="text-3xl font-bold text-gray-800">7.8/10</p>
-        <p className="text-green-500 text-sm">↑ 12% vs last quarter</p>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
-        <h3 className="text-gray-500 text-sm font-bold uppercase">Goal Achievement</h3>
-        <p className="text-3xl font-bold text-gray-800">85%</p>
-        <p className="text-gray-500 text-sm">34/40 Goals Met</p>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
-        <h3 className="text-gray-500 text-sm font-bold uppercase">Training Completion</h3>
-        <p className="text-3xl font-bold text-gray-800">92%</p>
-        <p className="text-gray-500 text-sm">Top Department: Engineering</p>
+    <div className="space-y-6">
+      {loading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading performance data...</p>
+        </div>
+      )}
+      
+      {/* Performance Score Overview */}
+      {performanceScore && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Overall Performance Score</h3>
+              <p className="text-gray-500">{performanceScore.period}</p>
+            </div>
+            <div className="text-right">
+              <div className={`text-4xl font-bold ${performanceScore.color === 'green' ? 'text-green-600' : 
+                performanceScore.color === 'blue' ? 'text-blue-600' : 
+                performanceScore.color === 'yellow' ? 'text-yellow-600' : 
+                performanceScore.color === 'orange' ? 'text-orange-600' : 'text-red-600'}`}>
+                {performanceScore.final_score}/100
+              </div>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mt-2 ${
+                performanceScore.color === 'green' ? 'bg-green-100 text-green-800' :
+                performanceScore.color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                performanceScore.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                performanceScore.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {performanceScore.category}
+              </span>
+            </div>
+          </div>
+          
+          {/* Performance Breakdown */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {Object.entries(performanceScore.breakdown).map(([key, value]) => (
+              <div key={key} className="text-center">
+                <div className="text-2xl font-bold text-gray-800">{value}%</div>
+                <div className="text-xs text-gray-500 capitalize">{key.replace('_', ' ')}</div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div 
+                    className={`h-2 rounded-full ${value >= 80 ? 'bg-green-500' : value >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    style={{ width: `${value}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* KPI Dashboard */}
+      {kpiData && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Key Performance Indicators</h3>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">{kpiData.summary.overall_score}%</div>
+              <div className="text-sm text-gray-500">Overall KPI Score</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-blue-800">{kpiData.summary.total_kpis}</div>
+              <div className="text-sm text-blue-600">Total KPIs</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-green-800">{kpiData.summary.completed_kpis}</div>
+              <div className="text-sm text-green-600">Completed</div>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-orange-800">{kpiData.summary.in_progress}</div>
+              <div className="text-sm text-orange-600">In Progress</div>
+            </div>
+          </div>
+          
+          {/* KPI List */}
+          <div className="space-y-3">
+            {kpiData.kpis.slice(0, 5).map((kpi) => (
+              <div key={kpi.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{kpi.title}</h4>
+                  <p className="text-sm text-gray-500">{kpi.description}</p>
+                </div>
+                <div className="text-right ml-4">
+                  <div className="text-lg font-bold text-gray-800">{kpi.progress}%</div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    kpi.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    kpi.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {kpi.status.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Insights */}
+      {performanceInsights && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">AI Performance Insights</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-green-700 mb-2">Strengths</h4>
+              <ul className="space-y-1">
+                {performanceInsights.strengths.map((strength, i) => (
+                  <li key={i} className="text-sm text-gray-600 flex items-center">
+                    <span className="text-green-500 mr-2">✓</span>
+                    {strength.replace('_', ' ')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-orange-700 mb-2">Improvement Areas</h4>
+              <ul className="space-y-1">
+                {performanceInsights.improvement_areas.map((area, i) => (
+                  <li key={i} className="text-sm text-gray-600 flex items-center">
+                    <span className="text-orange-500 mr-2">→</span>
+                    {area.replace('_', ' ')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2">Recommendations</h4>
+            <ul className="space-y-1">
+              {performanceInsights.recommendations.map((rec, i) => (
+                <li key={i} className="text-sm text-blue-700">• {rec}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Performance Trends Chart */}
+      {performanceTrends && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Performance Trends</h3>
+          <div className="h-64 bg-gray-50 flex items-end justify-around p-4 rounded">
+            {performanceTrends.trends.slice(-6).map((trend, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div 
+                  className="w-12 bg-blue-500 rounded-t mb-2" 
+                  style={{ height: `${Math.max(trend.performance_rating * 20, 10)}px` }}
+                >
+                  <div className="text-white text-xs text-center pt-1">
+                    {trend.performance_rating}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 text-center">
+                  {trend.month}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback for when no data is available */}
+      {!loading && !performanceScore && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+            <h3 className="text-gray-500 text-sm font-bold uppercase">Avg Performance</h3>
+            <p className="text-3xl font-bold text-gray-800">7.8/10</p>
+            <p className="text-green-500 text-sm">↑ 12% vs last quarter</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+            <h3 className="text-gray-500 text-sm font-bold uppercase">Goal Achievement</h3>
+            <p className="text-3xl font-bold text-gray-800">85%</p>
+            <p className="text-gray-500 text-sm">34/40 Goals Met</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+            <h3 className="text-gray-500 text-sm font-bold uppercase">Training Completion</h3>
+            <p className="text-3xl font-bold text-gray-800">92%</p>
+            <p className="text-gray-500 text-sm">Top Department: Engineering</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderKPIs = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-bold text-gray-900">Key Performance Indicators 📊</h3>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          + Add KPI
+        </button>
       </div>
 
-      <div className="col-span-3 bg-white p-6 rounded-lg shadow">
-        <h3 className="font-bold text-lg mb-4">Performance Trends</h3>
-        <div className="h-48 bg-gray-50 flex items-end justify-around p-4 rounded">
-          {[6.5, 7.0, 7.2, 7.8].map((val, i) => (
-            <div key={i} className="w-16 bg-blue-500 rounded-t" style={{ height: `${val * 10}%` }}>
-              <p className="text-white text-center text-xs mt-2">{val}</p>
-              <p className="text-gray-600 text-xs text-center mt-full pt-2">Q{i + 1}</p>
+      {kpiData && (
+        <>
+          {/* KPI Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
+              <div className="text-3xl font-bold">{kpiData.summary.total_kpis}</div>
+              <div className="text-blue-100">Total KPIs</div>
             </div>
-          ))}
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white">
+              <div className="text-3xl font-bold">{kpiData.summary.completed_kpis}</div>
+              <div className="text-green-100">Completed</div>
+            </div>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 rounded-lg text-white">
+              <div className="text-3xl font-bold">{kpiData.summary.in_progress}</div>
+              <div className="text-orange-100">In Progress</div>
+            </div>
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg text-white">
+              <div className="text-3xl font-bold">{kpiData.summary.overall_score}%</div>
+              <div className="text-purple-100">Overall Score</div>
+            </div>
+          </div>
+
+          {/* Detailed KPI List */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-900">KPI Details</h4>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {kpiData.kpis.map((kpi) => (
+                <div key={kpi.id} className="p-6 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3">
+                        <h5 className="text-lg font-medium text-gray-900">{kpi.title}</h5>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          kpi.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          kpi.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {kpi.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mt-1">{kpi.description}</p>
+                      <div className="mt-3 flex items-center space-x-4 text-sm text-gray-500">
+                        <span>Category: {kpi.category}</span>
+                        <span>Weight: {kpi.weight}</span>
+                        {kpi.target_date && <span>Due: {new Date(kpi.target_date).toLocaleDateString()}</span>}
+                      </div>
+                    </div>
+                    <div className="ml-6 text-right">
+                      <div className="text-2xl font-bold text-gray-900">{kpi.progress}%</div>
+                      <div className="w-24 bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            kpi.progress >= 100 ? 'bg-green-500' :
+                            kpi.progress >= 75 ? 'bg-blue-500' :
+                            kpi.progress >= 50 ? 'bg-yellow-500' :
+                            'bg-red-500'
+                          }`}
+                          style={{ width: `${kpi.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex space-x-3">
+                    <button className="text-sm text-blue-600 hover:text-blue-800">Update Progress</button>
+                    <button className="text-sm text-gray-600 hover:text-gray-800">View History</button>
+                    <button className="text-sm text-gray-600 hover:text-gray-800">Edit KPI</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {!kpiData && !loading && (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <div className="text-gray-400 text-6xl mb-4">📊</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No KPIs Found</h3>
+          <p className="text-gray-500 mb-4">Start tracking your key performance indicators</p>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Create Your First KPI
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 
@@ -475,19 +771,26 @@ export default function Performance() {
 
         {/* Tabs */}
         <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
-          {['dashboard', 'goals', 'sentiment', 'prediction', 'feedback', 'engagement'].map(tab => (
+          {['dashboard', 'kpis', 'goals', 'sentiment', 'prediction', 'feedback', 'engagement'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-lg font-medium capitalize whitespace-nowrap ${activeTab === tab ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
-              {tab === 'goals' ? '🎯 Goals & OKRs' : tab}
+              {tab === 'goals' ? '🎯 Goals & OKRs' : 
+               tab === 'kpis' ? '📊 KPIs' :
+               tab === 'dashboard' ? '📈 Dashboard' :
+               tab === 'sentiment' ? '🧠 Sentiment' :
+               tab === 'prediction' ? '🔮 Prediction' :
+               tab === 'feedback' ? '✍️ Feedback' :
+               tab === 'engagement' ? '❤️ Engagement' : tab}
             </button>
           ))}
         </div>
 
         {/* Content */}
         {activeTab === 'dashboard' && renderDashboard()}
+        {activeTab === 'kpis' && renderKPIs()}
         {activeTab === 'goals' && renderGoals()}
         {activeTab === 'sentiment' && renderSentiment()}
         {activeTab === 'prediction' && renderPrediction()}

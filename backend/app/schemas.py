@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, time
 from pydantic import BaseModel, ConfigDict
 
 # --- Auth Schemas ---
@@ -380,9 +380,14 @@ class SalaryRevisionOut(BaseModel):
 class EmployeeBase(BaseModel):
     first_name: str
     last_name: str
+    phone: Optional[str] = None  # Added phone field
     department: str
     position: Optional[str] = None
     date_of_joining: Optional[datetime] = None
+    date_of_birth: Optional[datetime] = None  # Added date of birth
+    address: Optional[str] = None  # Added address field
+    emergency_contact_name: Optional[str] = None  # Added emergency contact
+    emergency_contact_phone: Optional[str] = None  # Added emergency contact phone
     pan_number: Optional[str] = None
     aadhaar_number: Optional[str] = None
     profile_summary: Optional[str] = None
@@ -393,9 +398,14 @@ class EmployeeCreate(EmployeeBase):
 class EmployeeUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    phone: Optional[str] = None  # Added phone field
     department: Optional[str] = None
     position: Optional[str] = None
     date_of_joining: Optional[datetime] = None
+    date_of_birth: Optional[datetime] = None  # Added date of birth
+    address: Optional[str] = None  # Added address field
+    emergency_contact_name: Optional[str] = None  # Added emergency contact
+    emergency_contact_phone: Optional[str] = None  # Added emergency contact phone
     pan_number: Optional[str] = None
     aadhaar_number: Optional[str] = None
     profile_summary: Optional[str] = None
@@ -506,6 +516,52 @@ class EngagementAnalysisRequest(BaseModel):
     source: str
     text: str
 
+# --- Advanced Performance Schemas ---
+
+class KPICreate(BaseModel):
+    title: str
+    description: str
+    target_value: float
+    current_value: float = 0.0
+    unit: str
+    weight: float = 1.0
+    due_date: datetime
+
+class KPIOut(BaseModel):
+    id: int
+    employee_id: int
+    title: str
+    description: str
+    target_value: float
+    current_value: float
+    unit: str
+    weight: float
+    due_date: datetime
+    progress_percentage: float
+    status: str
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class PerformanceScoreResponse(BaseModel):
+    employee_id: int
+    employee_name: str
+    final_score: float
+    category: str
+    color: str
+    breakdown: Dict[str, float]
+    metrics: Dict[str, int]
+    period: str
+
+class TeamPerformanceResponse(BaseModel):
+    manager_id: int
+    team_size: int
+    average_score: float
+    performance_distribution: Dict[str, int]
+    team_performance: List[PerformanceScoreResponse]
+    top_performers: List[PerformanceScoreResponse]
+    improvement_needed: List[PerformanceScoreResponse]
+
 class AttritionPredictionRequest(BaseModel):
     employee_id: int
     no_promotion_years: int
@@ -548,19 +604,7 @@ class EnrollmentOut(EnrollmentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-class SkillGapRequest(BaseModel):
-    employee_id: int
-    current_role: str
-    target_role: Optional[str] = None
-
-class TrainingRecommendationRequest(BaseModel):
-    employee_id: int
-    current_skills: str
-    career_goal: str
-
-class LearningOutcomeRequest(BaseModel):
-    employee_id: int
-    target_skill: str
+# Duplicate definitions removed - see Learning & Development Schemas section below
 
 # --- Onboarding Schemas ---
 
@@ -677,6 +721,9 @@ class AccessRequestOut(BaseModel):
 class AnnouncementCreate(BaseModel):
     title: str
     content: str
+    priority: str = "normal"  # urgent, high, normal, low
+    category: str = "general"  # general, hr, it, finance, etc.
+    expires_at: Optional[datetime] = None
 
 class AnnouncementOut(BaseModel):
     id: int
@@ -684,8 +731,126 @@ class AnnouncementOut(BaseModel):
     content: str
     posted_by: int
     created_at: datetime
+    priority: str = "normal"
+    category: str = "general"
+    expires_at: Optional[datetime] = None
+    is_active: bool = True
     model_config = ConfigDict(from_attributes=True)
 
+
+# --- Enhanced Engagement Schemas ---
+
+class PulseSurveyCreate(BaseModel):
+    mood: str
+    comment: Optional[str] = None
+
+class PulseSurveyOut(BaseModel):
+    id: int
+    employee_id: int
+    mood: str
+    comment: Optional[str]
+    submitted_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class RecognitionCreate(BaseModel):
+    recipient_id: int
+    message: str
+    badge: str
+
+class RecognitionOut(BaseModel):
+    id: int
+    sender_id: int
+    recipient_id: int
+    message: str
+    badge: str
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class FeedbackCreate(BaseModel):
+    text: str
+    category: str
+    anonymous: bool = True
+
+class FeedbackOut(BaseModel):
+    id: int
+    text: str
+    category: str
+    submitted_at: datetime
+    votes: int
+    status: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class WellnessCheckinCreate(BaseModel):
+    score: int
+    notes: Optional[str] = None
+
+class WellnessCheckinOut(BaseModel):
+    id: int
+    employee_id: int
+    score: int
+    notes: Optional[str]
+    submitted_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class PhotoAlbumCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class PhotoAlbumOut(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    created_by: int
+    created_at: datetime
+    is_active: bool
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class GameScoreCreate(BaseModel):
+    game_type: str
+    score: int
+
+class GameScoreOut(BaseModel):
+    id: int
+    employee_id: int
+    game_type: str
+    score: int
+    played_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class TeamActivityCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    activity_type: str
+    scheduled_date: datetime
+    max_participants: Optional[int] = None
+
+class TeamActivityOut(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    activity_type: str
+    scheduled_date: datetime
+    max_participants: Optional[int]
+    created_by: int
+    created_at: datetime
+    is_active: bool
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    message: str
+    is_read: bool
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Engagement Schemas ---
 
@@ -938,3 +1103,336 @@ class ShiftOut(BaseModel):
 class ShiftAssignmentCreate(BaseModel):
     employee_id: int
     shift_id: int
+# --- Meeting Schemas ---
+
+class MeetingBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    meeting_date: date
+    start_time: str  # "09:00"
+    end_time: str    # "10:00"
+    location: Optional[str] = None
+    meeting_link: Optional[str] = None
+    meeting_type: str = "meeting"
+    is_recurring: bool = False
+    recurrence_pattern: Optional[str] = None
+    recurrence_end_date: Optional[date] = None
+    agenda: Optional[str] = None
+
+class MeetingCreate(MeetingBase):
+    attendee_ids: Optional[List[int]] = []
+
+class MeetingUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    meeting_date: Optional[date] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    location: Optional[str] = None
+    meeting_link: Optional[str] = None
+    status: Optional[str] = None
+    agenda: Optional[str] = None
+
+class MeetingAttendeeOut(BaseModel):
+    id: int
+    user_id: int
+    status: str
+    is_required: bool
+    response_date: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class MeetingOut(MeetingBase):
+    id: int
+    status: str
+    created_by: int
+    created_at: datetime
+    updated_at: datetime
+    attendees: List[MeetingAttendeeOut] = []
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class MeetingAttendeeCreate(BaseModel):
+    user_ids: List[int]
+
+class AttendeeStatusUpdate(BaseModel):
+    status: str  # accepted, declined, tentative
+
+class MeetingNoteBase(BaseModel):
+    content: str
+    note_type: str = "general"
+    is_private: bool = False
+
+class MeetingNoteCreate(MeetingNoteBase):
+    pass
+
+class MeetingNoteOut(MeetingNoteBase):
+    id: int
+    meeting_id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class MeetingActionItemBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    assigned_to: int
+    due_date: Optional[date] = None
+    priority: str = "medium"
+
+class MeetingActionItemCreate(MeetingActionItemBase):
+    pass
+
+class MeetingActionItemOut(MeetingActionItemBase):
+    id: int
+    meeting_id: int
+    status: str
+    created_by: int
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class MeetingRoomBase(BaseModel):
+    name: str
+    location: Optional[str] = None
+    capacity: Optional[int] = None
+    equipment: Optional[List[str]] = []
+
+class MeetingRoomCreate(MeetingRoomBase):
+    pass
+
+class MeetingRoomOut(MeetingRoomBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class MeetingRoomBookingBase(BaseModel):
+    room_id: int
+    meeting_date: date
+    start_time: str
+    end_time: str
+    purpose: Optional[str] = None
+    attendee_count: int = 1
+
+class MeetingRoomBookingCreate(MeetingRoomBookingBase):
+    pass
+
+class MeetingRoomBookingOut(BaseModel):
+    id: int
+    room_id: int
+    user_id: int
+    meeting_date: date
+    start_time: time
+    end_time: time
+    purpose: Optional[str] = None
+    attendee_count: int
+    status: str
+    created_at: datetime
+    cancelled_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# ============================================
+# EMPLOYEE MANAGEMENT ENHANCEMENT SCHEMAS
+# ============================================
+
+# Employee Lifecycle Events
+class EmployeeLifecycleEventBase(BaseModel):
+    event_type: str
+    effective_date: date
+    previous_data: Optional[dict] = None
+    new_data: Optional[dict] = None
+    reason: Optional[str] = None
+
+class EmployeeLifecycleEventCreate(EmployeeLifecycleEventBase):
+    employee_id: int
+
+class EmployeeLifecycleEventOut(EmployeeLifecycleEventBase):
+    id: int
+    employee_id: int
+    approved_by: Optional[int] = None
+    created_by: int
+    created_at: datetime
+    status: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Employee Hierarchy
+class EmployeeHierarchyBase(BaseModel):
+    manager_id: Optional[int] = None
+    level: int = 1
+    effective_from: date
+    effective_to: Optional[date] = None
+
+class EmployeeHierarchyCreate(EmployeeHierarchyBase):
+    employee_id: int
+
+class EmployeeHierarchyOut(EmployeeHierarchyBase):
+    id: int
+    employee_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Employee Contracts
+class EmployeeContractBase(BaseModel):
+    contract_type: str
+    start_date: date
+    end_date: Optional[date] = None
+    probation_period: Optional[int] = None
+    notice_period: Optional[int] = None
+    contract_document_url: Optional[str] = None
+    salary_details: Optional[dict] = None
+    benefits: Optional[dict] = None
+    terms_conditions: Optional[str] = None
+
+class EmployeeContractCreate(EmployeeContractBase):
+    employee_id: int
+
+class EmployeeContractOut(EmployeeContractBase):
+    id: int
+    employee_id: int
+    status: str
+    created_by: int
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Employee Exit
+class EmployeeExitBase(BaseModel):
+    exit_type: str
+    last_working_date: Optional[date] = None
+    notice_date: Optional[date] = None
+    reason: Optional[str] = None
+    exit_interview_completed: bool = False
+    exit_interview_notes: Optional[str] = None
+    clearance_status: Optional[dict] = None
+    final_settlement_amount: Optional[float] = None
+    final_settlement_date: Optional[date] = None
+    rehire_eligible: bool = True
+
+class EmployeeExitCreate(EmployeeExitBase):
+    employee_id: int
+
+class EmployeeExitOut(EmployeeExitBase):
+    id: int
+    employee_id: int
+    created_by: int
+    hr_approved_by: Optional[int] = None
+    manager_approved_by: Optional[int] = None
+    created_at: datetime
+    status: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Bulk Import
+class BulkImportLogOut(BaseModel):
+    id: int
+    filename: str
+    total_records: int
+    successful_records: int
+    failed_records: int
+    error_details: Optional[dict] = None
+    import_type: str
+    status: str
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Employee Directory
+class EmployeeDirectoryOut(BaseModel):
+    id: int
+    employee_code: Optional[str] = None
+    first_name: str
+    last_name: str
+    full_name: str
+    department: Optional[str] = None
+    position: Optional[str] = None
+    phone: Optional[str] = None
+    email: str
+    work_location: Optional[str] = None
+    employment_type: Optional[str] = None
+    manager_name: Optional[str] = None
+    profile_image_url: Optional[str] = None
+    is_active: bool
+    date_of_joining: Optional[datetime] = None
+    wfh_status: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Employee Skills Enhanced
+class SkillCreate(BaseModel):
+    name: str
+    category: Optional[str] = None
+    description: Optional[str] = None
+
+class SkillOut(BaseModel):
+    id: int
+    name: str
+    category: Optional[str] = None
+    description: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class EmployeeSkillCreate(BaseModel):
+    employee_id: int
+    skill_id: int
+    proficiency: int
+    certified: bool = False
+    certification_date: Optional[date] = None
+    certification_body: Optional[str] = None
+
+class EmployeeSkillOut(BaseModel):
+    id: int
+    employee_id: int
+    skill: SkillOut
+    proficiency: int
+    certified: bool
+    certification_date: Optional[date] = None
+    certification_body: Optional[str] = None
+    last_assessed: Optional[date] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Employee Analytics
+class EmployeeAnalyticsOut(BaseModel):
+    total_employees: int
+    active_employees: int
+    departments: List[str]
+    avg_tenure_months: float
+    turnover_rate: float
+    new_hires_this_month: int
+    exits_this_month: int
+    
+class DepartmentAnalyticsOut(BaseModel):
+    department: str
+    total_employees: int
+    avg_tenure_years: float
+    department_heads: int
+    
+class SkillsAnalyticsOut(BaseModel):
+    employee_id: int
+    employee_name: str
+    department: str
+    total_skills: int
+    avg_proficiency: float
+    certified_skills: int
+
+# Bulk Import Schemas
+class BulkEmployeeImport(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    department: Optional[str] = None
+    position: Optional[str] = None
+    phone: Optional[str] = None
+    date_of_joining: Optional[str] = None
+    employee_code: Optional[str] = None
+    manager_email: Optional[str] = None
+    employment_type: Optional[str] = "full_time"
+    work_location: Optional[str] = None

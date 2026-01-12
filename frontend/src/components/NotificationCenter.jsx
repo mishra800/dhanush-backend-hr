@@ -21,7 +21,11 @@ const NotificationCenter = () => {
     if (!userId) return;
 
     const connectWebSocket = () => {
-      const wsUrl = `ws://localhost:8001/notifications/ws/${userId}`;
+      // Use environment variable or fallback to current host
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = process.env.REACT_APP_WS_HOST || window.location.host;
+      const wsUrl = `${wsProtocol}//${wsHost}/notifications/ws/${userId}`;
+      
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
@@ -107,7 +111,7 @@ const NotificationCenter = () => {
   const loadNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications/', {
+      const response = await fetch('/notifications/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -125,7 +129,7 @@ const NotificationCenter = () => {
   const loadUnreadCount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications/unread-count', {
+      const response = await fetch('/notifications/unread-count', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -143,7 +147,7 @@ const NotificationCenter = () => {
   const markAsRead = async (notificationId) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`/api/notifications/${notificationId}/read`, {
+      await fetch(`/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -167,7 +171,7 @@ const NotificationCenter = () => {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('/api/notifications/mark-all-read', {
+      await fetch('/notifications/mark-all-read', {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -187,7 +191,7 @@ const NotificationCenter = () => {
   const deleteNotification = async (notificationId) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`/api/notifications/${notificationId}`, {
+      await fetch(`/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import logo from '../assets/logo.png';
 
 export default function SuperAdmin() {
   const [activeTab, setActiveTab] = useState('capabilities');
@@ -269,16 +270,19 @@ export default function SuperAdmin() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Company Logo Header */}
+        <div className="bg-white shadow rounded-lg p-6 text-center mb-8">
+          <img src={logo} alt="Company Logo" className="h-20 w-auto mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-3">
+            <span className="text-4xl">🔐</span>
+            Super Admin Panel
+          </h1>
+          <p className="text-gray-600 mt-2">Manage system capabilities and role permissions</p>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <span className="text-4xl">🔐</span>
-                Super Admin Panel
-              </h1>
-              <p className="text-gray-500 mt-1">Manage system capabilities and role permissions</p>
-            </div>
             <div className="flex gap-3">
               <button
                 onClick={resetToDefaults}

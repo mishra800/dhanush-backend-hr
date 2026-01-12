@@ -19,7 +19,7 @@ router = APIRouter(
 # ============================================
 
 @router.get("/dashboard/overview")
-async def get_dashboard_overview(
+def get_dashboard_overview(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: Session = Depends(database.get_db)
@@ -35,12 +35,12 @@ async def get_dashboard_overview(
     
     # Recruitment metrics
     total_applications = db.query(models.Application).filter(*query_filter).count()
-    active_jobs = db.query(models.Job).filter(models.Job.status == 'open').count()
+    active_jobs = db.query(models.Job).filter(models.Job.is_active == True).count()
     
     # Employee metrics
     total_employees = db.query(models.Employee).count()
     new_hires = db.query(models.Employee).filter(
-        models.Employee.hire_date >= (datetime.utcnow() - timedelta(days=30))
+        models.Employee.date_of_joining >= (datetime.utcnow() - timedelta(days=30))
     ).count() if not start_date else 0
     
     # Attendance metrics
@@ -51,7 +51,7 @@ async def get_dashboard_overview(
     ).count()
     
     # Performance metrics
-    avg_performance = db.query(func.avg(models.Performance.overall_rating)).scalar() or 0
+    avg_performance = db.query(func.avg(models.PerformanceReview.rating)).scalar() or 0
     
     return {
         "recruitment": {
@@ -71,7 +71,7 @@ async def get_dashboard_overview(
 
 
 @router.get("/recruitment/funnel")
-async def get_recruitment_funnel(
+def get_recruitment_funnel(
     job_id: Optional[int] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -122,8 +122,13 @@ async def get_recruitment_funnel(
         "rejected": stages['rejected']
     }
 
+@router.get("/test")
+def test_endpoint():
+    """Simple test endpoint"""
+    return {"status": "working", "message": "Enhanced analysis router is functional"}
+
 @router.get("/kpis/summary")
-async def get_kpi_summary(
+def get_kpi_summary(
     db: Session = Depends(database.get_db)
 ):
     """Get all key performance indicators in one call"""
@@ -134,7 +139,7 @@ async def get_kpi_summary(
     
     # Employee KPIs
     total_employees = db.query(models.Employee).count()
-    active_employees = db.query(models.Employee).filter(models.Employee.status == 'active').count()
+    active_employees = total_employees  # Assuming all employees are active since there's no status field
     
     # Attendance KPIs
     today = datetime.utcnow().date()
@@ -144,7 +149,7 @@ async def get_kpi_summary(
     ).count()
     
     # Performance KPIs
-    avg_performance = db.query(func.avg(models.Performance.overall_rating)).scalar() or 0
+    avg_performance = db.query(func.avg(models.PerformanceReview.rating)).scalar() or 0
     
     return {
         "recruitment": {
@@ -155,7 +160,7 @@ async def get_kpi_summary(
         "employees": {
             "total": total_employees,
             "active": active_employees,
-            "inactive": total_employees - active_employees
+            "inactive": 0  # No inactive employees since we don't track status
         },
         "attendance": {
             "present_today": present_today,

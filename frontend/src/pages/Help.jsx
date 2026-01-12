@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logo from '../assets/logo.png';
 
 export default function Help() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -7,12 +8,16 @@ export default function Help() {
   const sections = [
     { id: 'overview', name: 'System Overview', icon: '🏢' },
     { id: 'authentication', name: 'Login & Authentication', icon: '🔐' },
+    { id: 'dashboard', name: 'Dashboard & Navigation', icon: '📊' },
     { id: 'recruitment', name: 'Recruitment Process', icon: '👥' },
     { id: 'employees', name: 'Employee Management', icon: '👤' },
+    { id: 'onboarding', name: 'Onboarding Process', icon: '🚀' },
     { id: 'attendance', name: 'Attendance System', icon: '📅' },
     { id: 'leave', name: 'Leave Management', icon: '🏖️' },
+    { id: 'payroll', name: 'Payroll System', icon: '💰' },
+    { id: 'assets', name: 'Asset Management', icon: '💻' },
     { id: 'performance', name: 'Performance Reviews', icon: '⭐' },
-    { id: 'onboarding', name: 'Onboarding Process', icon: '🎯' },
+    { id: 'ai-assistant', name: 'AI Assistant', icon: '🤖' },
     { id: 'troubleshooting', name: 'Troubleshooting', icon: '🔧' },
   ];
 
@@ -22,18 +27,26 @@ export default function Help() {
         return <OverviewSection />;
       case 'authentication':
         return <AuthenticationSection />;
+      case 'dashboard':
+        return <DashboardSection />;
       case 'recruitment':
         return <RecruitmentSection />;
       case 'employees':
         return <EmployeesSection />;
+      case 'onboarding':
+        return <OnboardingSection />;
       case 'attendance':
         return <AttendanceSection />;
       case 'leave':
         return <LeaveSection />;
+      case 'payroll':
+        return <PayrollSection />;
+      case 'assets':
+        return <AssetsSection />;
       case 'performance':
         return <PerformanceSection />;
-      case 'onboarding':
-        return <OnboardingSection />;
+      case 'ai-assistant':
+        return <AIAssistantSection />;
       case 'troubleshooting':
         return <TroubleshootingSection />;
       default:
@@ -44,10 +57,11 @@ export default function Help() {
   return (
     <div>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">📚 Help & Documentation</h1>
-          <p className="text-gray-600">Complete guide to using the Dhanush Healthcare HR Management System</p>
+        {/* Company Logo Header */}
+        <div className="bg-white shadow rounded-lg p-6 text-center mb-8">
+          <img src={logo} alt="Company Logo" className="h-20 w-auto mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900">📚 Help & Documentation</h1>
+          <p className="text-gray-600 mt-2">Complete guide to using the HR Management System</p>
         </div>
 
         {/* Search Bar */}
@@ -105,26 +119,56 @@ function OverviewSection() {
       <h2 className="text-2xl font-bold text-gray-900 mb-4">🏢 System Overview</h2>
       
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-        <p className="text-blue-900 font-semibold">Welcome to Dhanush Healthcare HR Management System</p>
-        <p className="text-blue-800 text-sm mt-1">A comprehensive platform for managing all HR operations</p>
+        <p className="text-blue-900 font-semibold">Welcome to the AI-Powered HR Management System</p>
+        <p className="text-blue-800 text-sm mt-1">A comprehensive platform for managing all HR operations with advanced AI capabilities</p>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🚀 Latest Features (2025)</h3>
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+        <ul className="list-disc list-inside space-y-1 text-green-800 text-sm">
+          <li><strong>Enhanced Payroll System</strong> - Comprehensive salary calculations with approval workflows</li>
+          <li><strong>Asset Management</strong> - Complete asset lifecycle with photo documentation</li>
+          <li><strong>AI Assistant</strong> - Real-time HR support with intelligent responses</li>
+          <li><strong>Unified Dashboard</strong> - Role-based personalized dashboards</li>
+          <li><strong>Advanced Onboarding</strong> - 6-phase gatekeeper model with IT provisioning</li>
+          <li><strong>Attendance Hub</strong> - Centralized attendance management with WFH support</li>
+        </ul>
       </div>
 
       <h3 className="text-xl font-semibold mt-6 mb-3">Key Features</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <FeatureCard icon="👥" title="Recruitment" desc="End-to-end hiring process management" />
-        <FeatureCard icon="📅" title="Attendance" desc="Photo & GPS-based attendance tracking" />
-        <FeatureCard icon="🏖️" title="Leave Management" desc="Request and approve leaves" />
-        <FeatureCard icon="⭐" title="Performance" desc="360° performance reviews" />
-        <FeatureCard icon="🎯" title="Onboarding" desc="Streamlined new hire onboarding" />
-        <FeatureCard icon="📊" title="Analytics" desc="Real-time HR insights" />
+        <FeatureCard icon="👥" title="AI-Powered Recruitment" desc="Intelligent candidate matching and automated interviews" />
+        <FeatureCard icon="📅" title="Biometric Attendance" desc="Face recognition with GPS validation and WFH support" />
+        <FeatureCard icon="🏖️" title="Leave Management" desc="Automated approval workflows with balance tracking" />
+        <FeatureCard icon="💰" title="Comprehensive Payroll" desc="Automated calculations with compliance and approvals" />
+        <FeatureCard icon="🚀" title="Gatekeeper Onboarding" desc="6-phase compliance-driven onboarding process" />
+        <FeatureCard icon="💻" title="Asset Management" desc="Complete asset lifecycle with photo documentation" />
+        <FeatureCard icon="⭐" title="Performance Analytics" desc="360° reviews with predictive insights" />
+        <FeatureCard icon="🤖" title="AI Assistant" desc="Real-time HR support and intelligent responses" />
       </div>
 
-      <h3 className="text-xl font-semibold mt-6 mb-3">User Roles</h3>
+      <h3 className="text-xl font-semibold mt-6 mb-3">User Roles & Access Levels</h3>
       <div className="space-y-3">
-        <RoleCard role="Admin" color="purple" permissions={['Full system access', 'User management', 'System configuration']} />
-        <RoleCard role="HR" color="blue" permissions={['Employee management', 'Recruitment', 'Leave approval']} />
-        <RoleCard role="Manager" color="orange" permissions={['Team management', 'Performance reviews', 'Leave approval']} />
-        <RoleCard role="Employee" color="gray" permissions={['Mark attendance', 'Request leave', 'View profile']} />
+        <RoleCard role="Super Admin" color="purple" permissions={['Complete system control', 'Audit access', 'Security monitoring', 'All module access']} />
+        <RoleCard role="Admin" color="red" permissions={['User management', 'System configuration', 'All HR modules', 'Report generation']} />
+        <RoleCard role="HR Manager" color="blue" permissions={['Payroll approval', 'Leave policy management', 'Final hiring decisions', 'Employee lifecycle']} />
+        <RoleCard role="HR" color="indigo" permissions={['Payroll calculation', 'Recruitment management', 'Onboarding coordination', 'Attendance monitoring']} />
+        <RoleCard role="Manager" color="orange" permissions={['Team management', 'Leave approvals', 'WFH approvals', 'Performance reviews']} />
+        <RoleCard role="Assets Team" color="green" permissions={['Asset fulfillment', 'IT provisioning', 'Hardware management', 'Issue resolution']} />
+        <RoleCard role="Employee" color="gray" permissions={['Self-service access', 'Attendance marking', 'Leave requests', 'Payslip access']} />
+        <RoleCard role="Candidate" color="yellow" permissions={['Job applications', 'AI interviews', 'Application tracking', 'Limited access']} />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔒 Security & Compliance</h3>
+      <div className="bg-gray-50 rounded-lg p-4">
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li><strong>Role-Based Access Control</strong> - Granular permissions for each user role</li>
+          <li><strong>Audit Trail</strong> - Complete logging of all user actions and system changes</li>
+          <li><strong>Data Encryption</strong> - Secure data transmission and storage</li>
+          <li><strong>Biometric Security</strong> - Face recognition for attendance verification</li>
+          <li><strong>GPS Validation</strong> - Location-based attendance compliance</li>
+          <li><strong>Document Verification</strong> - OCR-based document validation</li>
+        </ul>
       </div>
     </div>
   );
@@ -140,39 +184,135 @@ function AuthenticationSection() {
       <div className="bg-gray-50 rounded-lg p-6 mb-6">
         <ol className="list-decimal list-inside space-y-3 text-gray-700">
           <li>Navigate to the login page</li>
-          <li>Enter your email address (e.g., john.doe@dhanushhealthcare.com)</li>
+          <li>Enter your email address (e.g., john.doe@company.com)</li>
           <li>Enter your password</li>
           <li>Click "Sign In"</li>
-          <li>You'll be redirected to your dashboard</li>
+          <li>You'll be redirected to your role-specific dashboard</li>
         </ol>
       </div>
 
-      <h3 className="text-xl font-semibold mt-6 mb-3">Default Credentials</h3>
-      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
-        <p className="text-yellow-900 font-semibold">⚠️ For Testing Only</p>
+      <h3 className="text-xl font-semibold mt-6 mb-3">🎭 Demo Credentials (Testing)</h3>
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+        <p className="text-green-900 font-semibold">✅ LEAN 5-Role Structure Available</p>
         <div className="mt-3 space-y-2 text-sm">
-          <p><strong>Admin:</strong> admin@dhanushhealthcare.com / admin123</p>
-          <p><strong>HR:</strong> hr@dhanushhealthcare.com / hr123</p>
-          <p><strong>Manager:</strong> manager@dhanushhealthcare.com / manager123</p>
+          <p><strong>👑 Super Admin:</strong> admin@company.com / admin123</p>
+          <p><strong>💼 HR Admin:</strong> hr@company.com / hr123</p>
+          <p><strong>👨‍💼 Manager:</strong> manager@company.com / manager123</p>
+          <p><strong>👤 Employee:</strong> employee@company.com / employee123</p>
+          <p><strong>🎓 Candidate:</strong> candidate@company.com / candidate123</p>
         </div>
+        <p className="text-green-800 text-xs mt-2">Click any role in the login page demo section to auto-login</p>
       </div>
 
-      <h3 className="text-xl font-semibold mt-6 mb-3">Forgot Password?</h3>
-      <div className="space-y-3 text-gray-700">
-        <p>1. Click "Forgot Password?" on the login page</p>
-        <p>2. Enter your email address</p>
-        <p>3. Check your email for reset link</p>
-        <p>4. Click the link and set a new password</p>
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔒 Security Features</h3>
+      <div className="space-y-3">
+        <SecurityFeature icon="🛡️" title="Rate Limiting" desc="Protection against brute force attacks" />
+        <SecurityFeature icon="🔐" title="JWT Tokens" desc="Secure session management with automatic expiry" />
+        <SecurityFeature icon="👤" title="Role-Based Access" desc="Granular permissions based on user roles" />
+        <SecurityFeature icon="📱" title="Remember Me" desc="Secure credential storage for convenience" />
       </div>
 
       <h3 className="text-xl font-semibold mt-6 mb-3">Password Requirements</h3>
       <ul className="list-disc list-inside space-y-2 text-gray-700">
-        <li>Minimum 8 characters</li>
-        <li>At least one uppercase letter</li>
-        <li>At least one lowercase letter</li>
-        <li>At least one number</li>
-        <li>At least one special character</li>
+        <li>Minimum 6 characters (enhanced security recommended)</li>
+        <li>Mix of letters and numbers recommended</li>
+        <li>Avoid common passwords</li>
+        <li>Change passwords regularly</li>
       </ul>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🆘 Account Issues</h3>
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+        <p className="text-yellow-900 font-semibold">Need Help?</p>
+        <ul className="text-yellow-800 text-sm mt-2 space-y-1">
+          <li>• <strong>Forgot Password:</strong> Contact your HR administrator</li>
+          <li>• <strong>Account Locked:</strong> Wait 15 minutes or contact support</li>
+          <li>• <strong>Role Issues:</strong> Verify with your manager or HR</li>
+          <li>• <strong>New Employee:</strong> HR will provide credentials after onboarding</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSection() {
+  return (
+    <div className="prose max-w-none">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">📊 Dashboard & Navigation</h2>
+      
+      <h3 className="text-xl font-semibold mt-6 mb-3">🎯 Role-Based Dashboards</h3>
+      <div className="space-y-4">
+        <DashboardCard 
+          role="Super Admin" 
+          color="purple" 
+          features={['System overview', 'User management', 'Audit logs', 'Security monitoring']}
+          description="Complete system control with administrative tools"
+        />
+        <DashboardCard 
+          role="HR Admin" 
+          color="blue" 
+          features={['Employee stats', 'Recruitment pipeline', 'Leave approvals', 'Payroll overview']}
+          description="Comprehensive HR operations dashboard"
+        />
+        <DashboardCard 
+          role="Manager" 
+          color="orange" 
+          features={['Team workload', 'Attendance overview', 'Performance metrics', 'Approval queue']}
+          description="Team management and oversight tools"
+        />
+        <DashboardCard 
+          role="Employee" 
+          color="gray" 
+          features={['Attendance status', 'Leave balance', 'Goals progress', 'Quick actions']}
+          description="Personal productivity and self-service portal"
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🧭 Navigation Guide</h3>
+      <div className="bg-gray-50 rounded-lg p-6 mb-6">
+        <h4 className="font-semibold mb-3">Sidebar Navigation:</h4>
+        <ul className="space-y-2 text-gray-700">
+          <li><strong>📊 Dashboard:</strong> Main overview and statistics</li>
+          <li><strong>👥 Recruitment:</strong> Job postings and candidate management</li>
+          <li><strong>👤 Employees:</strong> Employee directory and management</li>
+          <li><strong>📅 Attendance:</strong> Attendance tracking and reports</li>
+          <li><strong>🏖️ Leave:</strong> Leave requests and approvals</li>
+          <li><strong>💰 Payroll:</strong> Salary management and payslips</li>
+          <li><strong>💻 Assets:</strong> IT asset management and requests</li>
+          <li><strong>🚀 Onboarding:</strong> New employee onboarding process</li>
+          <li><strong>⭐ Performance:</strong> Performance reviews and goals</li>
+        </ul>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🤖 AI Assistant</h3>
+      <div className="bg-pink-50 border-l-4 border-pink-500 p-4 mb-6">
+        <p className="text-pink-900 font-semibold">💬 Your Personal HR Assistant</p>
+        <p className="text-pink-800 text-sm mt-1">Click the chat icon (bottom-right) for instant help with:</p>
+        <ul className="text-pink-800 text-sm mt-2 space-y-1">
+          <li>• Leave balance inquiries</li>
+          <li>• Attendance status checks</li>
+          <li>• Payroll information</li>
+          <li>• System navigation help</li>
+          <li>• Policy clarifications</li>
+        </ul>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔔 Notifications</h3>
+      <div className="space-y-2 text-gray-700">
+        <p><strong>Bell Icon (Top Bar):</strong> System notifications and alerts</p>
+        <p><strong>Real-time Updates:</strong> Leave approvals, payroll updates, system announcements</p>
+        <p><strong>Priority Alerts:</strong> Urgent items requiring immediate attention</p>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">📱 Mobile Responsiveness</h3>
+      <div className="bg-blue-50 rounded-lg p-4">
+        <p className="text-blue-900 font-semibold">✅ Fully Mobile Optimized</p>
+        <ul className="text-blue-800 text-sm mt-2 space-y-1">
+          <li>• Responsive design works on all devices</li>
+          <li>• Touch-friendly interface for mobile attendance</li>
+          <li>• Optimized camera integration for face recognition</li>
+          <li>• GPS functionality for location-based features</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -388,26 +528,416 @@ function PerformanceSection() {
 function OnboardingSection() {
   return (
     <div className="prose max-w-none">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">🎯 Onboarding Process</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">🚀 Onboarding Process</h2>
       
-      <h3 className="text-xl font-semibold mt-6 mb-3">Onboarding Steps</h3>
-      <div className="space-y-4">
-        <OnboardingStep number="1" title="Pre-Joining" desc="Document collection, background verification" />
-        <OnboardingStep number="2" title="Day 1" desc="Welcome, ID card, system access" />
-        <OnboardingStep number="3" title="Week 1" desc="Team introduction, training sessions" />
-        <OnboardingStep number="4" title="Month 1" desc="Goal setting, buddy assignment" />
-        <OnboardingStep number="5" title="Month 3" desc="First review, feedback session" />
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <p className="text-blue-900 font-semibold">🛡️ 6-Phase Gatekeeper Model</p>
+        <p className="text-blue-800 text-sm mt-1">Compliance-driven onboarding with mandatory checkpoints</p>
       </div>
 
-      <h3 className="text-xl font-semibold mt-6 mb-3">Required Documents</h3>
-      <ul className="list-disc list-inside space-y-2 text-gray-700">
-        <li>PAN Card</li>
-        <li>Aadhaar Card</li>
-        <li>Educational Certificates</li>
-        <li>Previous Employment Documents</li>
-        <li>Bank Account Details</li>
-        <li>Passport Size Photos</li>
-      </ul>
+      <h3 className="text-xl font-semibold mt-6 mb-3">Onboarding Phases</h3>
+      <div className="space-y-4">
+        <OnboardingPhase 
+          number="1" 
+          title="Pre-boarding" 
+          desc="Offer acceptance, welcome email, document collection checklist"
+          status="automatic"
+        />
+        <OnboardingPhase 
+          number="2" 
+          title="Day 1 Welcome" 
+          desc="First day orientation, initial setup, welcome kit distribution"
+          status="hr-guided"
+        />
+        <OnboardingPhase 
+          number="3" 
+          title="🚪 Compliance Gate (CRITICAL)" 
+          desc="Document upload, OCR verification, admin review - MUST PASS TO PROCEED"
+          status="gatekeeper"
+        />
+        <OnboardingPhase 
+          number="4" 
+          title="IT Fulfillment (Auto-triggered)" 
+          desc="Email setup, VPN access, access card, hardware assignment, software installation"
+          status="it-automated"
+        />
+        <OnboardingPhase 
+          number="5" 
+          title="Induction & Activation" 
+          desc="Training modules, department introduction, role activation"
+          status="hr-guided"
+        />
+        <OnboardingPhase 
+          number="6" 
+          title="Monitoring & Support" 
+          desc="30-day check-in, performance tracking, feedback collection"
+          status="ongoing"
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">📋 Required Documents</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <DocumentCard title="Identity Documents" docs={['PAN Card', 'Aadhaar Card', 'Passport (if applicable)']} />
+        <DocumentCard title="Educational Certificates" docs={['Degree Certificates', 'Mark Sheets', 'Professional Certifications']} />
+        <DocumentCard title="Employment Documents" docs={['Previous Employment Letters', 'Experience Certificates', 'Salary Slips']} />
+        <DocumentCard title="Banking & Personal" docs={['Bank Account Details', 'Passport Size Photos', 'Address Proof']} />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🤖 AI Document Processing</h3>
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+        <p className="text-green-900 font-semibold">✨ Intelligent OCR Extraction</p>
+        <ul className="text-green-800 text-sm mt-2 space-y-1">
+          <li>• <strong>PAN Card:</strong> Auto-extracts PAN number and name</li>
+          <li>• <strong>Aadhaar Card:</strong> Extracts Aadhaar number and address</li>
+          <li>• <strong>Offer Letter:</strong> Extracts salary, position, and joining date</li>
+          <li>• <strong>Resume:</strong> Extracts skills, experience, and education</li>
+        </ul>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔄 Process Flow</h3>
+      <div className="bg-gray-50 rounded-lg p-6">
+        <ol className="list-decimal list-inside space-y-3 text-gray-700">
+          <li><strong>Employee Joins:</strong> HR creates employee profile and initiates onboarding</li>
+          <li><strong>Document Upload:</strong> Employee uploads required documents through portal</li>
+          <li><strong>AI Processing:</strong> OCR extracts data and pre-fills employee information</li>
+          <li><strong>Compliance Review:</strong> Admin reviews and approves documents (GATE)</li>
+          <li><strong>IT Provisioning:</strong> Automatic IT ticket creation and resource allocation</li>
+          <li><strong>Asset Assignment:</strong> Hardware and software provisioning with photo documentation</li>
+          <li><strong>Account Activation:</strong> System access and role assignment</li>
+          <li><strong>Training Assignment:</strong> Role-specific training modules and induction</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
+function PayrollSection() {
+  return (
+    <div className="prose max-w-none">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Payroll System</h2>
+      
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+        <p className="text-green-900 font-semibold">🆕 Enhanced Payroll System (2025)</p>
+        <p className="text-green-800 text-sm mt-1">Comprehensive salary calculations with approval workflows and compliance</p>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔄 Payroll Process Flow</h3>
+      <div className="space-y-4">
+        <PayrollStep 
+          number="1" 
+          title="Monthly Calculation" 
+          desc="HR calculates payroll based on attendance, salary structure, and adjustments"
+          role="HR"
+        />
+        <PayrollStep 
+          number="2" 
+          title="Review & Verification" 
+          desc="HR reviews calculations, checks for errors, and adds manual adjustments if needed"
+          role="HR"
+        />
+        <PayrollStep 
+          number="3" 
+          title="Approval Required" 
+          desc="HR Manager approves the calculated payroll before distribution"
+          role="HR Manager"
+        />
+        <PayrollStep 
+          number="4" 
+          title="Payslip Generation" 
+          desc="System generates detailed payslips with all earnings and deductions"
+          role="System"
+        />
+        <PayrollStep 
+          number="5" 
+          title="Distribution" 
+          desc="Payslips are distributed to employees via email and portal access"
+          role="System"
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">💵 Salary Components</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <ComponentCard 
+          title="Earnings" 
+          color="green"
+          items={['Basic Salary', 'HRA (House Rent Allowance)', 'Transport Allowance', 'Medical Allowance', 'Special Allowance', 'Bonus & Incentives', 'Overtime Amount']}
+        />
+        <ComponentCard 
+          title="Deductions" 
+          color="red"
+          items={['PF (Provident Fund)', 'ESI (Employee State Insurance)', 'Professional Tax', 'Income Tax (TDS)', 'Loan Deductions', 'Other Deductions']}
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">📊 For Employees</h3>
+      <div className="bg-blue-50 rounded-lg p-6 mb-6">
+        <h4 className="font-semibold mb-3">How to Access Your Payslip:</h4>
+        <ol className="list-decimal list-inside space-y-2 text-gray-700">
+          <li>Go to Payroll section in the dashboard</li>
+          <li>View your current month payslip</li>
+          <li>Download PDF version for records</li>
+          <li>Check payroll history for previous months</li>
+          <li>View salary structure and components breakdown</li>
+        </ol>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🏢 For HR Team</h3>
+      <div className="bg-purple-50 rounded-lg p-6 mb-6">
+        <h4 className="font-semibold mb-3">Payroll Management Process:</h4>
+        <ol className="list-decimal list-inside space-y-2 text-gray-700">
+          <li><strong>Calculate Payroll:</strong> Use "Calculate All" for batch processing</li>
+          <li><strong>Review Calculations:</strong> Check individual payroll records for accuracy</li>
+          <li><strong>Manual Adjustments:</strong> Add bonuses, deductions, or corrections</li>
+          <li><strong>Submit for Approval:</strong> Send to HR Manager for final approval</li>
+          <li><strong>Generate Reports:</strong> Export payroll summary and detailed reports</li>
+          <li><strong>Distribute Payslips:</strong> Email payslips to all employees</li>
+        </ol>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">⚙️ Advanced Features</h3>
+      <div className="space-y-3">
+        <FeatureHighlight icon="🔄" title="Attendance Integration" desc="Automatic working days calculation from attendance data" />
+        <FeatureHighlight icon="📈" title="Tax Calculation" desc="Automated income tax calculation based on current tax slabs" />
+        <FeatureHighlight icon="✏️" title="Manual Adjustments" desc="Add custom earnings or deductions with audit trail" />
+        <FeatureHighlight icon="📋" title="Approval Workflow" desc="Role-based approval system with notifications" />
+        <FeatureHighlight icon="📊" title="Detailed Reports" desc="Comprehensive payroll analytics and export options" />
+      </div>
+    </div>
+  );
+}
+
+function AssetsSection() {
+  return (
+    <div className="prose max-w-none">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">💻 Asset Management</h2>
+      
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <p className="text-blue-900 font-semibold">🔧 Complete Asset Lifecycle Management</p>
+        <p className="text-blue-800 text-sm mt-1">From request to retirement with photo documentation and complaint tracking</p>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔄 Asset Request Process</h3>
+      <div className="space-y-4">
+        <AssetStep 
+          number="1" 
+          title="Employee Request" 
+          desc="Employee submits asset request with justification and requirements"
+          icon="📝"
+        />
+        <AssetStep 
+          number="2" 
+          title="Manager Approval" 
+          desc="Direct manager reviews and approves/rejects the request"
+          icon="👨‍💼"
+        />
+        <AssetStep 
+          number="3" 
+          title="HR Approval" 
+          desc="HR team validates budget and policy compliance"
+          icon="💼"
+        />
+        <AssetStep 
+          number="4" 
+          title="Assets Team Assignment" 
+          desc="IT/Assets team receives ticket and processes fulfillment"
+          icon="🔧"
+        />
+        <AssetStep 
+          number="5" 
+          title="Asset Allocation" 
+          desc="Physical asset assignment with photo documentation"
+          icon="📸"
+        />
+        <AssetStep 
+          number="6" 
+          title="Employee Acknowledgment" 
+          desc="Employee confirms receipt and accepts responsibility"
+          icon="✅"
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">💻 Asset Categories</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <AssetCategory 
+          title="Hardware Assets" 
+          icon="🖥️"
+          items={['Laptops & Desktops', 'Monitors & Peripherals', 'Mobile Devices', 'Printers & Scanners', 'Network Equipment']}
+        />
+        <AssetCategory 
+          title="Software Assets" 
+          icon="💿"
+          items={['Operating System Licenses', 'Productivity Software', 'Development Tools', 'Security Software', 'Cloud Subscriptions']}
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">📱 For Employees</h3>
+      <div className="bg-green-50 rounded-lg p-6 mb-6">
+        <h4 className="font-semibold mb-3">How to Request Assets:</h4>
+        <ol className="list-decimal list-inside space-y-2 text-gray-700">
+          <li>Go to Assets section in dashboard</li>
+          <li>Click "Request New Asset"</li>
+          <li>Fill in asset details and justification</li>
+          <li>Submit request for approval</li>
+          <li>Track request status in real-time</li>
+          <li>Acknowledge receipt when asset is delivered</li>
+        </ol>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🛠️ Asset Complaints & Issues</h3>
+      <div className="bg-orange-50 rounded-lg p-6 mb-6">
+        <h4 className="font-semibold mb-3">Reporting Asset Problems:</h4>
+        <ol className="list-decimal list-inside space-y-2 text-gray-700">
+          <li>Navigate to your assigned assets</li>
+          <li>Click "Report Issue" on the problematic asset</li>
+          <li>Describe the problem with photos if needed</li>
+          <li>Assets team will be automatically notified</li>
+          <li>Track resolution progress and updates</li>
+          <li>Confirm resolution when issue is fixed</li>
+        </ol>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🏢 For Assets Team</h3>
+      <div className="bg-purple-50 rounded-lg p-6 mb-6">
+        <h4 className="font-semibold mb-3">Asset Management Dashboard:</h4>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li><strong>Pending Requests:</strong> View and process new asset requests</li>
+          <li><strong>Fulfillment Queue:</strong> Manage asset allocation and delivery</li>
+          <li><strong>Photo Documentation:</strong> Upload photos during asset handover</li>
+          <li><strong>Issue Resolution:</strong> Handle complaints and maintenance requests</li>
+          <li><strong>Inventory Management:</strong> Track asset status and availability</li>
+          <li><strong>Compliance Tracking:</strong> Ensure proper documentation and approvals</li>
+        </ul>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">📸 Photo Documentation</h3>
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <p className="font-semibold text-gray-900 mb-2">📷 Visual Asset Tracking</p>
+        <ul className="text-gray-700 text-sm space-y-1">
+          <li>• Photos required during asset handover</li>
+          <li>• Before/after photos for repairs and maintenance</li>
+          <li>• Asset condition documentation</li>
+          <li>• Compliance and audit trail maintenance</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function AIAssistantSection() {
+  return (
+    <div className="prose max-w-none">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI Assistant</h2>
+      
+      <div className="bg-pink-50 border-l-4 border-pink-500 p-4 mb-6">
+        <p className="text-pink-900 font-semibold">🆕 Your Personal HR Assistant (2025)</p>
+        <p className="text-pink-800 text-sm mt-1">Real-time HR support with intelligent responses and data integration</p>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">💬 How to Use the AI Assistant</h3>
+      <div className="bg-gray-50 rounded-lg p-6 mb-6">
+        <ol className="list-decimal list-inside space-y-3 text-gray-700">
+          <li><strong>Access:</strong> Click the chat icon (🎙️) in the bottom-right corner</li>
+          <li><strong>Ask Questions:</strong> Type your HR-related questions in natural language</li>
+          <li><strong>Get Instant Answers:</strong> Receive real-time responses with relevant data</li>
+          <li><strong>Follow Suggestions:</strong> Use quick suggestion buttons for common queries</li>
+          <li><strong>Continue Conversation:</strong> Ask follow-up questions for detailed help</li>
+        </ol>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🎯 What You Can Ask</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <QueryCategory 
+          title="Leave & Attendance" 
+          icon="📅"
+          examples={[
+            '"What is my leave balance?"',
+            '"How many days have I worked this month?"',
+            '"When is my next holiday?"',
+            '"Can I take leave next week?"'
+          ]}
+        />
+        <QueryCategory 
+          title="Payroll & Salary" 
+          icon="💰"
+          examples={[
+            '"When will I get my salary?"',
+            '"What are my salary components?"',
+            '"How is my tax calculated?"',
+            '"Show me my last payslip"'
+          ]}
+        />
+        <QueryCategory 
+          title="Policies & Procedures" 
+          icon="📋"
+          examples={[
+            '"What is the WFH policy?"',
+            '"How do I request assets?"',
+            '"What documents do I need for onboarding?"',
+            '"How do I mark attendance?"'
+          ]}
+        />
+        <QueryCategory 
+          title="System Navigation" 
+          icon="🧭"
+          examples={[
+            '"How do I update my profile?"',
+            '"Where can I see my team?"',
+            '"How do I submit a complaint?"',
+            '"Where is the recruitment section?"'
+          ]}
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🚀 Smart Features</h3>
+      <div className="space-y-3">
+        <AIFeature 
+          icon="🔍" 
+          title="Real-time Data Access" 
+          desc="Fetches live data from your profile, attendance, and payroll records"
+        />
+        <AIFeature 
+          icon="🧠" 
+          title="Context Awareness" 
+          desc="Understands your role and provides relevant information"
+        />
+        <AIFeature 
+          icon="💡" 
+          title="Smart Suggestions" 
+          desc="Offers quick action buttons for common tasks"
+        />
+        <AIFeature 
+          icon="📚" 
+          title="Policy Knowledge" 
+          desc="Provides accurate information about company policies and procedures"
+        />
+        <AIFeature 
+          icon="🔄" 
+          title="Fallback Support" 
+          desc="Works offline with cached responses when API is unavailable"
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">💡 Pro Tips</h3>
+      <div className="bg-blue-50 rounded-lg p-6">
+        <ul className="space-y-2 text-blue-800">
+          <li><strong>🎯 Be Specific:</strong> "My leave balance for casual leave" vs "leave balance"</li>
+          <li><strong>📅 Include Dates:</strong> "Attendance for last week" vs "attendance"</li>
+          <li><strong>🔄 Try Variations:</strong> If one question doesn't work, rephrase it</li>
+          <li><strong>📱 Use Anywhere:</strong> AI assistant works on all pages and devices</li>
+          <li><strong>🆘 Escalate When Needed:</strong> AI will guide you to human support for complex issues</li>
+        </ul>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">⚠️ Limitations</h3>
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+        <p className="text-yellow-900 font-semibold">Current Limitations:</p>
+        <ul className="text-yellow-800 text-sm mt-2 space-y-1">
+          <li>• Cannot perform actions (like submitting leave requests)</li>
+          <li>• Limited to information retrieval and guidance</li>
+          <li>• May not have access to confidential HR decisions</li>
+          <li>• For complex issues, will redirect to human support</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -417,55 +947,153 @@ function TroubleshootingSection() {
     <div className="prose max-w-none">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">🔧 Troubleshooting</h2>
       
-      <h3 className="text-xl font-semibold mt-6 mb-3">Common Issues</h3>
+      <h3 className="text-xl font-semibold mt-6 mb-3">🚨 Common Issues & Solutions</h3>
       
       <div className="space-y-6">
         <TroubleshootCard 
-          issue="Cannot Login"
+          issue="Cannot Login / Authentication Failed"
           solutions={[
-            'Check email and password are correct',
-            'Ensure caps lock is off',
-            'Try "Forgot Password" to reset',
-            'Contact HR if issue persists'
+            'Verify email and password are correct (case-sensitive)',
+            'Check if Caps Lock is enabled',
+            'Clear browser cache and cookies',
+            'Try incognito/private browsing mode',
+            'Contact HR if account is locked or deactivated'
           ]}
         />
         
         <TroubleshootCard 
           issue="Camera Not Working (Attendance)"
           solutions={[
-            'Allow camera permission in browser',
-            'Close other apps using camera',
-            'Try different browser',
-            'Check camera works in other apps'
+            'Allow camera permission when browser prompts',
+            'Close other applications using the camera',
+            'Try a different browser (Chrome recommended)',
+            'Check if camera works in other applications',
+            'Restart browser and try again',
+            'Ensure good lighting for face recognition'
           ]}
         />
         
         <TroubleshootCard 
-          issue="Location Error (Attendance)"
+          issue="Location/GPS Error (Attendance)"
           solutions={[
             'Allow location permission in browser',
             'Enable location services in system settings',
-            'Check GPS is working',
-            'Try again in a few seconds'
+            'Check if GPS is working in other apps',
+            'Move to an area with better GPS signal',
+            'For WFH: Ensure WFH request is approved',
+            'Contact manager if location validation fails'
           ]}
         />
-        
+
         <TroubleshootCard 
-          issue="Employee Profile Not Found"
+          issue="Payroll/Payslip Not Visible"
           solutions={[
-            'Contact admin to create employee profile',
-            'Ensure user account is linked to employee',
-            'Check with HR department'
+            'Check if payroll has been processed for the month',
+            'Verify your employee profile is complete',
+            'Contact HR if payroll calculation is pending',
+            'Ensure you have the correct role permissions',
+            'Try refreshing the page or logging out/in'
+          ]}
+        />
+
+        <TroubleshootCard 
+          issue="Asset Request Stuck/Not Progressing"
+          solutions={[
+            'Check request status in Assets section',
+            'Verify all required approvals are obtained',
+            'Contact your manager for approval status',
+            'Reach out to Assets team for fulfillment updates',
+            'Ensure request details are complete and accurate'
+          ]}
+        />
+
+        <TroubleshootCard 
+          issue="Leave Balance Incorrect"
+          solutions={[
+            'Check leave history for recent deductions',
+            'Verify if any leaves are pending approval',
+            'Contact HR for balance reconciliation',
+            'Check if annual leave allocation has been updated',
+            'Review leave policy for calculation rules'
+          ]}
+        />
+
+        <TroubleshootCard 
+          issue="AI Assistant Not Responding"
+          solutions={[
+            'Check internet connection',
+            'Try rephrasing your question',
+            'Use suggested quick questions',
+            'Clear browser cache and reload page',
+            'AI works offline with limited responses',
+            'Contact support if issue persists'
+          ]}
+        />
+
+        <TroubleshootCard 
+          issue="Page Loading Issues/Slow Performance"
+          solutions={[
+            'Check internet connection speed',
+            'Clear browser cache and cookies',
+            'Disable browser extensions temporarily',
+            'Try a different browser',
+            'Close unnecessary browser tabs',
+            'Restart browser or device'
           ]}
         />
       </div>
 
-      <h3 className="text-xl font-semibold mt-6 mb-3">Contact Support</h3>
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-        <p className="text-blue-900 font-semibold">Need More Help?</p>
-        <p className="text-blue-800 text-sm mt-2">Email: support@dhanushhealthcare.com</p>
-        <p className="text-blue-800 text-sm">Phone: +91 1234567890</p>
-        <p className="text-blue-800 text-sm">Hours: Mon-Fri, 9 AM - 6 PM</p>
+      <h3 className="text-xl font-semibold mt-6 mb-3">🆘 Emergency Contacts</h3>
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <p className="text-red-900 font-semibold">Critical System Issues</p>
+        <div className="text-red-800 text-sm mt-2 space-y-1">
+          <p><strong>🔥 System Down:</strong> Contact IT Support immediately</p>
+          <p><strong>🔐 Security Issues:</strong> Report to Security Team</p>
+          <p><strong>💰 Payroll Emergencies:</strong> Contact HR Manager directly</p>
+          <p><strong>📅 Attendance Issues (Same Day):</strong> Notify manager immediately</p>
+        </div>
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">📞 Support Channels</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <SupportChannel 
+          title="HR Support" 
+          icon="💼"
+          contact="hr@company.com"
+          hours="Mon-Fri, 9 AM - 6 PM"
+          for="Leave, Payroll, Policies"
+        />
+        <SupportChannel 
+          title="IT Support" 
+          icon="💻"
+          contact="it@company.com"
+          hours="Mon-Fri, 8 AM - 8 PM"
+          for="Technical Issues, Assets"
+        />
+      </div>
+
+      <h3 className="text-xl font-semibold mt-6 mb-3">🔍 Self-Help Resources</h3>
+      <div className="bg-blue-50 rounded-lg p-6">
+        <ul className="space-y-2 text-blue-800">
+          <li><strong>🤖 AI Assistant:</strong> Ask questions 24/7 for instant help</li>
+          <li><strong>📚 This Help Section:</strong> Comprehensive guides for all features</li>
+          <li><strong>🔔 Notifications:</strong> Check for system announcements and updates</li>
+          <li><strong>👥 Team Members:</strong> Ask colleagues who use the same features</li>
+          <li><strong>📱 Mobile Access:</strong> Try accessing from mobile if desktop fails</li>
+        </ul>
+      </div>
+
+      <h3 className="text-xl font-semibent mt-6 mb-3">🐛 Reporting Bugs</h3>
+      <div className="bg-gray-50 rounded-lg p-6">
+        <p className="font-semibold text-gray-900 mb-3">When reporting issues, please include:</p>
+        <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
+          <li>Your browser and version (Chrome, Firefox, etc.)</li>
+          <li>Operating system (Windows, Mac, Mobile)</li>
+          <li>Exact error message (screenshot if possible)</li>
+          <li>Steps to reproduce the issue</li>
+          <li>Your user role and permissions</li>
+          <li>Time when the issue occurred</li>
+        </ul>
       </div>
     </div>
   );
@@ -486,9 +1114,13 @@ function FeatureCard({ icon, title, desc }) {
 function RoleCard({ role, color, permissions }) {
   const colors = {
     purple: 'bg-purple-50 border-purple-200 text-purple-900',
+    red: 'bg-red-50 border-red-200 text-red-900',
     blue: 'bg-blue-50 border-blue-200 text-blue-900',
+    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-900',
     orange: 'bg-orange-50 border-orange-200 text-orange-900',
-    gray: 'bg-gray-50 border-gray-200 text-gray-900'
+    green: 'bg-green-50 border-green-200 text-green-900',
+    gray: 'bg-gray-50 border-gray-200 text-gray-900',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900'
   };
   
   return (
@@ -499,6 +1131,230 @@ function RoleCard({ role, color, permissions }) {
           <li key={idx}>• {perm}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function SecurityFeature({ icon, title, desc }) {
+  return (
+    <div className="flex items-start space-x-3 bg-gray-50 rounded-lg p-4">
+      <span className="text-2xl">{icon}</span>
+      <div>
+        <h4 className="font-semibold text-gray-900">{title}</h4>
+        <p className="text-sm text-gray-600">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function DashboardCard({ role, color, features, description }) {
+  const colors = {
+    purple: 'bg-purple-50 border-purple-200',
+    blue: 'bg-blue-50 border-blue-200',
+    orange: 'bg-orange-50 border-orange-200',
+    gray: 'bg-gray-50 border-gray-200'
+  };
+  
+  return (
+    <div className={`border rounded-lg p-4 ${colors[color]}`}>
+      <h4 className="font-semibold text-gray-900 mb-2">{role} Dashboard</h4>
+      <p className="text-sm text-gray-600 mb-3">{description}</p>
+      <ul className="text-sm space-y-1">
+        {features.map((feature, idx) => (
+          <li key={idx} className="flex items-center">
+            <span className="w-2 h-2 bg-current rounded-full mr-2"></span>
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function OnboardingPhase({ number, title, desc, status }) {
+  const statusColors = {
+    automatic: 'bg-blue-100 text-blue-800',
+    'hr-guided': 'bg-green-100 text-green-800',
+    gatekeeper: 'bg-red-100 text-red-800',
+    'it-automated': 'bg-purple-100 text-purple-800',
+    ongoing: 'bg-yellow-100 text-yellow-800'
+  };
+  
+  const statusLabels = {
+    automatic: 'Automatic',
+    'hr-guided': 'HR Guided',
+    gatekeeper: 'CRITICAL GATE',
+    'it-automated': 'IT Automated',
+    ongoing: 'Ongoing'
+  };
+  
+  return (
+    <div className="flex items-start space-x-4 bg-gray-50 rounded-lg p-4">
+      <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+        {number}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="font-semibold text-gray-900">{title}</h4>
+          <span className={`px-2 py-1 text-xs font-semibold rounded ${statusColors[status]}`}>
+            {statusLabels[status]}
+          </span>
+        </div>
+        <p className="text-sm text-gray-600">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function DocumentCard({ title, docs }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-3">{title}</h4>
+      <ul className="text-sm text-gray-600 space-y-1">
+        {docs.map((doc, idx) => (
+          <li key={idx} className="flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            {doc}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PayrollStep({ number, title, desc, role }) {
+  const roleColors = {
+    'HR': 'bg-blue-100 text-blue-800',
+    'HR Manager': 'bg-purple-100 text-purple-800',
+    'System': 'bg-green-100 text-green-800'
+  };
+  
+  return (
+    <div className="flex items-start space-x-4 bg-gray-50 rounded-lg p-4">
+      <div className="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold">
+        {number}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="font-semibold text-gray-900">{title}</h4>
+          <span className={`px-2 py-1 text-xs font-semibold rounded ${roleColors[role]}`}>
+            {role}
+          </span>
+        </div>
+        <p className="text-sm text-gray-600">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function ComponentCard({ title, color, items }) {
+  const colors = {
+    green: 'bg-green-50 border-green-200 text-green-900',
+    red: 'bg-red-50 border-red-200 text-red-900'
+  };
+  
+  return (
+    <div className={`border rounded-lg p-4 ${colors[color]}`}>
+      <h4 className="font-semibold mb-3">{title}</h4>
+      <ul className="text-sm space-y-1">
+        {items.map((item, idx) => (
+          <li key={idx}>• {item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function FeatureHighlight({ icon, title, desc }) {
+  return (
+    <div className="flex items-start space-x-3 bg-gray-50 rounded-lg p-4">
+      <span className="text-2xl">{icon}</span>
+      <div>
+        <h4 className="font-semibold text-gray-900">{title}</h4>
+        <p className="text-sm text-gray-600">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function AssetStep({ number, title, desc, icon }) {
+  return (
+    <div className="flex items-start space-x-4 bg-gray-50 rounded-lg p-4">
+      <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+        {number}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center mb-2">
+          <span className="text-xl mr-2">{icon}</span>
+          <h4 className="font-semibold text-gray-900">{title}</h4>
+        </div>
+        <p className="text-sm text-gray-600">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function AssetCategory({ title, icon, items }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex items-center mb-3">
+        <span className="text-2xl mr-2">{icon}</span>
+        <h4 className="font-semibold text-gray-900">{title}</h4>
+      </div>
+      <ul className="text-sm text-gray-600 space-y-1">
+        {items.map((item, idx) => (
+          <li key={idx} className="flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function QueryCategory({ title, icon, examples }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex items-center mb-3">
+        <span className="text-2xl mr-2">{icon}</span>
+        <h4 className="font-semibold text-gray-900">{title}</h4>
+      </div>
+      <ul className="text-sm text-gray-600 space-y-2">
+        {examples.map((example, idx) => (
+          <li key={idx} className="bg-gray-50 rounded px-2 py-1 font-mono text-xs">
+            {example}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function AIFeature({ icon, title, desc }) {
+  return (
+    <div className="flex items-start space-x-3 bg-pink-50 rounded-lg p-4">
+      <span className="text-2xl">{icon}</span>
+      <div>
+        <h4 className="font-semibold text-gray-900">{title}</h4>
+        <p className="text-sm text-gray-600">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function SupportChannel({ title, icon, contact, hours, for: forWhat }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="flex items-center mb-3">
+        <span className="text-2xl mr-2">{icon}</span>
+        <h4 className="font-semibold text-gray-900">{title}</h4>
+      </div>
+      <div className="text-sm text-gray-600 space-y-1">
+        <p><strong>Contact:</strong> {contact}</p>
+        <p><strong>Hours:</strong> {hours}</p>
+        <p><strong>For:</strong> {forWhat}</p>
+      </div>
     </div>
   );
 }

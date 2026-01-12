@@ -2,6 +2,7 @@ import { useAuth } from '../context/authcontext';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import logo from '../assets/logo.png';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -123,6 +124,13 @@ export default function Dashboard() {
   if (role === 'super_admin' || role === 'hr_admin') {
     return (
       <div className="space-y-6">
+        {/* Company Logo Header */}
+        <div className="bg-white shadow rounded-lg p-6 text-center">
+          <img src={logo} alt="Company Logo" className="h-20 w-auto mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900">Welcome to Admin Dashboard</h1>
+          <p className="text-gray-600 mt-2">Manage your organization efficiently</p>
+        </div>
+
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
@@ -415,6 +423,13 @@ export default function Dashboard() {
   if (role === 'hiring_manager') {
     return (
       <div className="space-y-6">
+        {/* Company Logo Header */}
+        <div className="bg-white shadow rounded-lg p-6 text-center">
+          <img src={logo} alt="Company Logo" className="h-20 w-auto mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
+          <p className="text-gray-600 mt-2">Lead your team to success</p>
+        </div>
+
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div className="bg-white overflow-hidden shadow rounded-lg p-5">
             <dt className="text-sm font-medium text-gray-500 truncate">My Team Size</dt>
@@ -500,9 +515,11 @@ export default function Dashboard() {
   if (role === 'candidate') {
     return (
       <div className="space-y-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome, {user?.first_name || 'Candidate'}!</h2>
-          <p className="text-gray-600">Track your applications and explore new opportunities.</p>
+        {/* Company Logo Header */}
+        <div className="bg-white shadow rounded-lg p-6 text-center">
+          <img src={logo} alt="Company Logo" className="h-20 w-auto mx-auto mb-4" />
+          <h2 className="text-3xl font-bold text-gray-900">Welcome, {user?.first_name || 'Candidate'}!</h2>
+          <p className="text-gray-600 mt-2">Track your applications and explore new opportunities</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -543,6 +560,13 @@ export default function Dashboard() {
   // --- 4. EMPLOYEE DASHBOARD (Default) ---
   return (
     <div className="space-y-6">
+      {/* Company Logo Header */}
+      <div className="bg-white shadow rounded-lg p-6 text-center">
+        <img src={logo} alt="Company Logo" className="h-20 w-auto mx-auto mb-4" />
+        <h1 className="text-3xl font-bold text-gray-900">Employee Dashboard</h1>
+        <p className="text-gray-600 mt-2">Your workspace for productivity and growth</p>
+      </div>
+
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-white overflow-hidden shadow rounded-lg p-5">
           <dt className="text-sm font-medium text-gray-500 truncate">Leave Balance</dt>

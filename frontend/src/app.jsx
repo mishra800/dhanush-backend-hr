@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './components/layout';
-import ProtectedRoute from './components/protectedroute';
+import Layout from './components/layout.jsx';
+import ProtectedRoute from './components/protectedroute.jsx';
 import Dashboard from './pages/dashboard';
 import Welcome from './pages/welcome';
 import Careers from './pages/careers';
@@ -10,6 +10,7 @@ import Signup from './pages/signup';
 import Recruitment from './pages/recruitment';
 import AIInterview from './pages/aiinterview';
 import Employees from './pages/employees';
+import EmployeeManagement from './pages/EmployeeManagement';
 
 import Attendance from './pages/Attendance';
 import WFHRequest from './pages/WFHRequest';
@@ -25,7 +26,7 @@ import Payroll from './pages/payroll';
 import Assets from './pages/assets';
 import AssetAcknowledgment from './pages/AssetAcknowledgment';
 import Announcements from './pages/announcements';
-import Profile from './pages/Profile';
+import Profile from './pages/profile.jsx';
 import Documents from './pages/documents';
 import Meetings from './pages/meetings';
 import SuperAdmin from './pages/superadmin';
@@ -67,6 +68,7 @@ function App() {
             <Route path="recruitment" element={<Recruitment />} />
             <Route path="recruitment/interview/:applicationId" element={<AIInterview />} />
             <Route path="employees" element={<Employees />} />
+            <Route path="employee-management" element={<EmployeeManagement />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="wfh-request" element={<WFHRequest />} />
             <Route path="onboarding" element={<Onboarding />} />

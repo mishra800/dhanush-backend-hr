@@ -112,10 +112,15 @@ export default function EmployeeInformationForm({ onComplete }) {
           alert('Please enter a valid email address');
           return false;
         }
-        // Phone validation (basic)
-        const phoneRegex = /^[0-9+\s-]{10,}$/;
+        // Phone validation (enhanced)
+        const phoneRegex = /^[+]?[0-9\s-]{10,15}$/;
         if (!phoneRegex.test(formData.personal_contact)) {
-          alert('Please enter a valid phone number (minimum 10 digits)');
+          alert('Please enter a valid phone number (10-15 digits)');
+          return false;
+        }
+        // Official email validation if provided
+        if (formData.official_email && !emailRegex.test(formData.official_email)) {
+          alert('Please enter a valid official email address');
           return false;
         }
         break;

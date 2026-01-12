@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date, Float, Text, JSON
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date, Float, Text, JSON, Time, Numeric
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime
@@ -126,14 +126,20 @@ class Employee(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     first_name = Column(String)
     last_name = Column(String)
+    phone = Column(String, nullable=True)  # Added missing phone field
     department = Column(String)
     position = Column(String)
     date_of_joining = Column(DateTime)
+    date_of_birth = Column(DateTime, nullable=True)  # Added date of birth
+    address = Column(Text, nullable=True)  # Added address field
+    emergency_contact_name = Column(String, nullable=True)  # Added emergency contact
+    emergency_contact_phone = Column(String, nullable=True)  # Added emergency contact phone
     pan_number = Column(String, nullable=True)
     aadhaar_number = Column(String, nullable=True)
     profile_summary = Column(Text, nullable=True)
     profile_image_url = Column(String, nullable=True)  # For face recognition
     wfh_status = Column(String, default="office")  # office, wfh
+    profile_completion_percentage = Column(Integer, default=0)  # Track profile completion
     
     # Onboarding Fields
     is_immediate_joiner = Column(Boolean, default=False)
@@ -537,6 +543,130 @@ class Goal(Base):
     
     employee = relationship("Employee")
 
+# ============================================
+# ENGAGEMENT MODELS
+# ============================================
+
+class PulseSurvey(Base):
+    __tablename__ = "pulse_surveys"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    mood = Column(String(50), nullable=False)  # terrible, bad, okay, good, amazing
+    comment = Column(Text, nullable=True)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    
+    employee = relationship("Employee")
+
+class Recognition(Base):
+    __tablename__ = "recognitions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recipient_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    badge = Column(String(50), nullable=False)  # star, team, innovator, etc.
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    sender = relationship("User")
+    recipient = relationship("Employee")
+
+class AnonymousFeedback(Base):
+    __tablename__ = "anonymous_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    text = Column(Text, nullable=False)
+    category = Column(String(100), nullable=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    votes = Column(Integer, default=0)
+    status = Column(String(50), default="active")  # active, archived
+
+class WellnessCheckin(Base):
+    __tablename__ = "wellness_checkins"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    score = Column(Integer, nullable=False)  # 1-10
+    notes = Column(Text, nullable=True)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    
+    employee = relationship("Employee")
+
+class PhotoAlbum(Base):
+    __tablename__ = "photo_albums"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+    
+    creator = relationship("User")
+
+class PhotoGallery(Base):
+    __tablename__ = "photo_gallery"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    album_id = Column(Integer, ForeignKey("photo_albums.id"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    
+    album = relationship("PhotoAlbum")
+    uploader = relationship("User")
+
+class GameScore(Base):
+    __tablename__ = "game_scores"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    game_type = Column(String(50), nullable=False)  # trivia, wordscramble, etc.
+    score = Column(Integer, nullable=False)
+    played_at = Column(DateTime, default=datetime.utcnow)
+    
+    employee = relationship("Employee")
+
+class EngagementNotification(Base):
+    __tablename__ = "engagement_notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String(50), nullable=False)  # recognition, activity, pulse, etc.
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")
+
+class TeamActivity(Base):
+    __tablename__ = "team_activities"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    activity_type = Column(String(50), nullable=False)  # virtual, physical
+    scheduled_date = Column(DateTime, nullable=False)
+    max_participants = Column(Integer, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+    
+    creator = relationship("User")
+
+class ActivityParticipant(Base):
+    __tablename__ = "activity_participants"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    activity_id = Column(Integer, ForeignKey("team_activities.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+    
+    activity = relationship("TeamActivity")
+    employee = relationship("Employee")
+
 class Feedback(Base):
     __tablename__ = "feedbacks"
     id = Column(Integer, primary_key=True, index=True)
@@ -548,6 +678,96 @@ class Feedback(Base):
 
     employee = relationship("Employee")
     reviewer = relationship("User")
+
+# KPI and Advanced Performance Models
+class KPI(Base):
+    __tablename__ = "kpis"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    target_value = Column(Float, nullable=False)
+    current_value = Column(Float, default=0.0)
+    unit = Column(String(50), nullable=False)  # percentage, count, hours, score
+    weight = Column(Float, default=1.0)
+    due_date = Column(DateTime)
+    status = Column(String(50), default="active")  # active, completed, paused, cancelled
+    progress_percentage = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    
+    employee = relationship("Employee")
+    creator = relationship("User")
+
+class KPIProgress(Base):
+    __tablename__ = "kpi_progress"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    kpi_id = Column(Integer, ForeignKey("kpis.id"))
+    previous_value = Column(Float)
+    new_value = Column(Float)
+    progress_notes = Column(Text)
+    updated_by = Column(Integer, ForeignKey("users.id"))
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    
+    kpi = relationship("KPI")
+    updater = relationship("User")
+
+class PerformancePeriod(Base):
+    __tablename__ = "performance_periods"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    period_type = Column(String(50), nullable=False)  # quarterly, annual, monthly, custom
+    is_active = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class PeerFeedback(Base):
+    __tablename__ = "peer_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    reviewer_id = Column(Integer, ForeignKey("employees.id"))
+    review_period_id = Column(Integer, ForeignKey("performance_periods.id"))
+    collaboration_rating = Column(Integer)  # 1-5
+    communication_rating = Column(Integer)  # 1-5
+    reliability_rating = Column(Integer)  # 1-5
+    innovation_rating = Column(Integer)  # 1-5
+    overall_rating = Column(Integer)  # 1-5
+    strengths = Column(Text)
+    improvement_areas = Column(Text)
+    additional_comments = Column(Text)
+    is_anonymous = Column(Boolean, default=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    
+    employee = relationship("Employee", foreign_keys=[employee_id])
+    reviewer = relationship("Employee", foreign_keys=[reviewer_id])
+    period = relationship("PerformancePeriod")
+
+class PerformanceImprovementPlan(Base):
+    __tablename__ = "performance_improvement_plans"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    manager_id = Column(Integer, ForeignKey("employees.id"))
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    status = Column(String(50), default="active")  # active, completed, cancelled, extended
+    success_criteria = Column(Text)
+    support_provided = Column(Text)
+    progress_notes = Column(Text)
+    final_outcome = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    employee = relationship("Employee", foreign_keys=[employee_id])
+    manager = relationship("Employee", foreign_keys=[manager_id])
 
 class Skill(Base):
     __tablename__ = "skills"
@@ -666,34 +886,16 @@ class AssetAssignment(Base):
     condition_at_assignment = Column(String, default="good")  # excellent, good, fair, poor
     condition_at_return = Column(String, nullable=True)
     
-    # Delivery tracking with photo documentation
+    # Delivery tracking
     delivery_status = Column(String, default="pending")  # pending, in_transit, delivered, returned
     delivery_notes = Column(Text, nullable=True)
     employee_acknowledgment = Column(Boolean, default=False)
     acknowledgment_date = Column(DateTime, nullable=True)
     
-    # Photo documentation
-    delivery_photo_url = Column(String, nullable=True)  # Photo taken during delivery
-    employee_photo_url = Column(String, nullable=True)  # Photo with employee receiving assets
-    setup_completion_photo_url = Column(String, nullable=True)  # Photo of completed setup
-    
-    # Infrastructure setup tracking
-    laptop_provided = Column(Boolean, default=False)
-    email_setup_completed = Column(Boolean, default=False)
-    wifi_access_configured = Column(Boolean, default=False)
-    id_card_provided = Column(Boolean, default=False)
-    biometric_enrolled = Column(Boolean, default=False)
-    
-    # Setup completion tracking
-    setup_completed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    setup_completed_at = Column(DateTime, nullable=True)
-    setup_notes = Column(Text, nullable=True)
-    
     asset = relationship("Asset")
     employee = relationship("Employee")
     request = relationship("AssetRequest")
     assigner = relationship("User", foreign_keys=[assigned_by])
-    setup_completer = relationship("User", foreign_keys=[setup_completed_by])
 
 class InfrastructureRequest(Base):
     __tablename__ = "infrastructure_requests"
@@ -841,6 +1043,12 @@ class Announcement(Base):
     content = Column(Text)
     posted_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Enhanced fields
+    priority = Column(String, default="normal")  # urgent, high, normal, low
+    category = Column(String, default="general")  # general, hr, it, finance, etc.
+    expires_at = Column(DateTime, nullable=True)  # Optional expiry date
+    is_active = Column(Boolean, default=True)  # Can be deactivated
 
     author = relationship("User")
 
@@ -1372,3 +1580,247 @@ class OnboardingStatusLog(Base):
     
     employee = relationship("Employee")
     user = relationship("User")
+
+# ============================================
+# GENERAL MEETINGS MODELS
+# ============================================
+
+class Meeting(Base):
+    __tablename__ = "meetings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    meeting_date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    location = Column(String)  # Physical location or "Online"
+    meeting_link = Column(String)  # Zoom/Teams/Meet link
+    meeting_type = Column(String, default="meeting")  # meeting, standup, one-on-one, performance-review, team-building
+    status = Column(String, default="scheduled")  # scheduled, in-progress, completed, cancelled
+    is_recurring = Column(Boolean, default=False)
+    recurrence_pattern = Column(String)  # daily, weekly, monthly
+    recurrence_end_date = Column(Date)
+    agenda = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    organizer = relationship("User", foreign_keys=[created_by])
+    attendees = relationship("MeetingAttendee", back_populates="meeting")
+    notes = relationship("MeetingNote", back_populates="meeting")
+
+class MeetingAttendee(Base):
+    __tablename__ = "meeting_attendees"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(String, default="invited")  # invited, accepted, declined, tentative, attended, no-show
+    is_required = Column(Boolean, default=True)
+    response_date = Column(DateTime)
+    joined_at = Column(DateTime)
+    left_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    meeting = relationship("Meeting", back_populates="attendees")
+    user = relationship("User")
+
+class MeetingNote(Base):
+    __tablename__ = "meeting_notes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(Text, nullable=False)
+    note_type = Column(String, default="general")  # general, action-item, decision, follow-up
+    is_private = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    meeting = relationship("Meeting", back_populates="notes")
+    author = relationship("User")
+
+class MeetingActionItem(Base):
+    __tablename__ = "meeting_action_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"))
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    assigned_to = Column(Integer, ForeignKey("users.id"))
+    due_date = Column(Date)
+    status = Column(String, default="pending")  # pending, in-progress, completed, overdue
+    priority = Column(String, default="medium")  # low, medium, high, urgent
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime)
+    
+    meeting = relationship("Meeting")
+    assignee = relationship("User", foreign_keys=[assigned_to])
+    creator = relationship("User", foreign_keys=[created_by])
+
+class MeetingTemplate(Base):
+    __tablename__ = "meeting_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text)
+    meeting_type = Column(String, nullable=False)
+    default_duration_minutes = Column(Integer, default=60)
+    default_agenda = Column(Text)
+    default_attendee_roles = Column(JSON)  # Array of roles to auto-invite
+    is_active = Column(Boolean, default=True)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    creator = relationship("User")
+
+class MeetingRoom(Base):
+    __tablename__ = "meeting_rooms"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    location = Column(String)
+    capacity = Column(Integer)
+    equipment = Column(JSON)  # Array of available equipment
+    is_active = Column(Boolean, default=True)
+    booking_url = Column(String)  # External booking system URL
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    creator = relationship("User")
+
+class MeetingRoomBooking(Base):
+    __tablename__ = "meeting_room_bookings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    room_id = Column(Integer, ForeignKey("meeting_rooms.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    meeting_date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    purpose = Column(String)
+    attendee_count = Column(Integer, default=1)
+    status = Column(String, default="confirmed")  # confirmed, cancelled, completed
+    created_at = Column(DateTime, default=datetime.utcnow)
+    cancelled_at = Column(DateTime)
+    
+    room = relationship("MeetingRoom")
+    user = relationship("User")
+
+# ============================================
+# EMPLOYEE MANAGEMENT ENHANCEMENTS
+# ============================================
+
+class EmployeeLifecycleEvent(Base):
+    __tablename__ = "employee_lifecycle_events"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    event_type = Column(String(50), nullable=False)  # promotion, transfer, department_change, role_change, exit, rehire
+    effective_date = Column(Date, nullable=False)
+    previous_data = Column(JSON)  # Store previous values
+    new_data = Column(JSON)  # Store new values
+    reason = Column(Text)
+    approved_by = Column(Integer, ForeignKey("users.id"))
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String(20), default="pending")  # pending, approved, rejected, completed
+    
+    employee = relationship("Employee")
+    approver = relationship("User", foreign_keys=[approved_by])
+    creator = relationship("User", foreign_keys=[created_by])
+
+class EmployeeHierarchy(Base):
+    __tablename__ = "employee_hierarchy"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    manager_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    level = Column(Integer, default=1)  # Organizational level
+    effective_from = Column(Date, default=datetime.utcnow)
+    effective_to = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    employee = relationship("Employee", foreign_keys=[employee_id])
+    manager = relationship("Employee", foreign_keys=[manager_id])
+
+class EmployeeContract(Base):
+    __tablename__ = "employee_contracts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    contract_type = Column(String(50), nullable=False)  # permanent, contract, intern, consultant
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=True)
+    probation_period = Column(Integer)  # in months
+    notice_period = Column(Integer)  # in days
+    contract_document_url = Column(String(500))
+    salary_details = Column(JSON)  # Store salary structure
+    benefits = Column(JSON)  # Store benefits information
+    terms_conditions = Column(Text)
+    status = Column(String(20), default="active")  # active, expired, terminated, renewed
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    employee = relationship("Employee")
+    creator = relationship("User", foreign_keys=[created_by])
+
+class EmployeeExit(Base):
+    __tablename__ = "employee_exits"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    exit_type = Column(String(50), nullable=False)  # resignation, termination, retirement, layoff
+    last_working_date = Column(Date)
+    notice_date = Column(Date)
+    reason = Column(Text)
+    exit_interview_completed = Column(Boolean, default=False)
+    exit_interview_notes = Column(Text)
+    clearance_status = Column(JSON)  # Track clearance from different departments
+    final_settlement_amount = Column(Numeric(10, 2))
+    final_settlement_date = Column(Date)
+    rehire_eligible = Column(Boolean, default=True)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    hr_approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    manager_approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String(20), default="initiated")  # initiated, in_progress, completed
+    
+    employee = relationship("Employee")
+    creator = relationship("User", foreign_keys=[created_by])
+    hr_approver = relationship("User", foreign_keys=[hr_approved_by])
+    manager_approver = relationship("User", foreign_keys=[manager_approved_by])
+
+class BulkImportLog(Base):
+    __tablename__ = "bulk_import_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String(255), nullable=False)
+    total_records = Column(Integer, nullable=False)
+    successful_records = Column(Integer, default=0)
+    failed_records = Column(Integer, default=0)
+    error_details = Column(JSON)  # Store validation errors
+    imported_by = Column(Integer, ForeignKey("users.id"))
+    import_type = Column(String(50))  # employees, skills, contracts, etc.
+    status = Column(String(20), default="processing")  # processing, completed, failed
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    
+    importer = relationship("User", foreign_keys=[imported_by])
+
+class EmployeeAnalyticsCache(Base):
+    __tablename__ = "employee_analytics_cache"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    metric_name = Column(String(100), nullable=False)
+    metric_value = Column(JSON, nullable=False)
+    department = Column(String(100))
+    date_range = Column(String(50))  # monthly, quarterly, yearly
+    calculated_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime)

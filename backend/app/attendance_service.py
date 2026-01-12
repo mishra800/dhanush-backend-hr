@@ -6,13 +6,26 @@ Handles basic attendance marking with face recognition
 from datetime import datetime, time, date, timedelta
 from typing import Dict, Any, Optional, Tuple
 from sqlalchemy.orm import Session
-from app import models, face_recognition_utils
+from app import models
 from app.notification_service import get_notification_service
 from app.security_service import get_security_service
 import math
 import base64
 import os
 import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
+# Try to import face recognition, fallback if not available
+try:
+    from app import face_recognition_utils
+    FACE_RECOGNITION_AVAILABLE = True
+    logger.info("Face recognition module loaded successfully")
+except ImportError as e:
+    logger.warning(f"Face recognition not available: {e}")
+    FACE_RECOGNITION_AVAILABLE = False
+    face_recognition_utils = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,28 +111,316 @@ class AttendanceService:
             # STEP 4: RECORD CREATION
             # ============================================
             
-            attendance_result = await self._create_attendance_record(
-                employee=employee,
-                wfh_request=wfh_request,
-                assigned_shift=assigned_shift,
-                photo_base64=photo_base64,
-                latitude=latitude,
-                longitude=longitude,
-                verification_data=verification_result["verification_data"],
-                validation_data=validation_result["validation_data"]
+            record_result = await self._create_attendance_record(
+                employee, assigned_shift, wfh_request, verification_result, validation_result
             )
             
-            logger.info(f"Attendance marking completed for employee {employee_id}")
-            return attendance_result
+            return record_result
             
         except Exception as e:
-            logger.error(f"Error in comprehensive attendance marking: {e}")
+            logger.error(f"Error in comprehensive attendance marking: {str(e)}")
             return {
                 "success": False,
-                "error": "system_error",
-                "message": f"System error occurred: {str(e)}",
-                "details": {"exception": str(e)}
+                "error": f"System error: {str(e)}",
+                "error_type": "system_error"
             }
+    
+    async def _perform_pre_checks(self, employee_id: int) -> Dict[str, Any]:
+        """Perform pre-checks before attendance marking"""
+        
+        # Get employee
+        employee = self.db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+        if not employee:
+            return {"success": False, "error": "Employee not found", "error_type": "employee_not_found"}
+        
+        # Check if already marked today
+        today = date.today()
+        existing_attendance = self.db.query(models.Attendance).filter(
+            models.Attendance.employee_id == employee_id,
+            models.Attendance.date == today
+        ).first()
+        
+        if existing_attendance:
+            return {
+                "success": False, 
+                "error": "Attendance already marked for today",
+                "error_type": "already_marked",
+                "existing_record": {
+                    "check_in": existing_attendance.check_in_time.strftime("%H:%M") if existing_attendance.check_in_time else None,
+                    "check_out": existing_attendance.check_out_time.strftime("%H:%M") if existing_attendance.check_out_time else None,
+                    "status": existing_attendance.status
+                }
+            }
+        
+        # Check WFH status
+        wfh_request = self.db.query(models.WFHRequest).filter(
+            models.WFHRequest.employee_id == employee_id,
+            models.WFHRequest.date == today,
+            models.WFHRequest.status == "approved"
+        ).first()
+        
+        # Get assigned shift
+        assigned_shift = self.db.query(models.Shift).filter(
+            models.Shift.employee_id == employee_id,
+            models.Shift.is_active == True
+        ).first()
+        
+        return {
+            "success": True,
+            "employee": employee,
+            "wfh_request": wfh_request,
+            "assigned_shift": assigned_shift
+        }
+    
+    async def _perform_verification(
+        self, 
+        employee: models.Employee, 
+        photo_base64: Optional[str], 
+        latitude: Optional[float], 
+        longitude: Optional[float],
+        use_face_recognition: bool
+    ) -> Dict[str, Any]:
+        """Perform verification checks"""
+        
+        verification_data = {
+            "face_verified": False,
+            "face_confidence": 0.0,
+            "location_verified": False,
+            "distance_from_office": None,
+            "device_info": None
+        }
+        
+        # Face recognition verification
+        if use_face_recognition and photo_base64:
+            try:
+                face_result = await face_recognition_utils.verify_face(
+                    employee.id, photo_base64
+                )
+                verification_data["face_verified"] = face_result.get("verified", False)
+                verification_data["face_confidence"] = face_result.get("confidence", 0.0)
+            except Exception as e:
+                logger.warning(f"Face recognition failed: {str(e)}")
+                verification_data["face_verified"] = False
+        
+        # GPS verification
+        if latitude and longitude:
+            distance = self._calculate_distance(
+                latitude, longitude,
+                self.OFFICE_COORDS["lat"], self.OFFICE_COORDS["lon"]
+            )
+            verification_data["distance_from_office"] = distance
+            verification_data["location_verified"] = distance <= self.MAX_DISTANCE
+        
+        return {
+            "success": True,
+            "verification_data": verification_data
+        }
+    
+    async def _perform_validation(
+        self,
+        employee: models.Employee,
+        assigned_shift: Optional[models.Shift],
+        wfh_request: Optional[models.WFHRequest],
+        latitude: Optional[float],
+        longitude: Optional[float]
+    ) -> Dict[str, Any]:
+        """Perform validation checks"""
+        
+        current_time = datetime.now().time()
+        validation_data = {
+            "time_window_valid": False,
+            "location_required": True,
+            "shift_name": "Default",
+            "grace_period_used": False
+        }
+        
+        # Time window validation
+        if assigned_shift:
+            shift_config = self.SHIFT_WINDOWS.get(assigned_shift.shift_name, self.SHIFT_WINDOWS["Morning Shift"])
+            validation_data["shift_name"] = assigned_shift.shift_name
+            
+            # Check if within time window (including grace period)
+            start_time = shift_config["start"]
+            end_time = shift_config["end"]
+            grace_minutes = shift_config["grace"]
+            
+            # Calculate grace period end time
+            grace_end = datetime.combine(date.today(), end_time)
+            grace_end += timedelta(minutes=grace_minutes)
+            grace_end_time = grace_end.time()
+            
+            if start_time <= current_time <= end_time:
+                validation_data["time_window_valid"] = True
+            elif end_time < current_time <= grace_end_time:
+                validation_data["time_window_valid"] = True
+                validation_data["grace_period_used"] = True
+        else:
+            # Default time window (9 AM - 11 AM)
+            validation_data["time_window_valid"] = time(9, 0) <= current_time <= time(11, 0)
+        
+        # Location requirement
+        if wfh_request:
+            validation_data["location_required"] = False
+        
+        return {
+            "success": True,
+            "validation_data": validation_data
+        }
+    
+    async def _create_attendance_record(
+        self,
+        employee: models.Employee,
+        assigned_shift: Optional[models.Shift],
+        wfh_request: Optional[models.WFHRequest],
+        verification_result: Dict[str, Any],
+        validation_result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Create attendance record with proper status"""
+        
+        verification_data = verification_result["verification_data"]
+        validation_data = validation_result["validation_data"]
+        
+        # Determine attendance status
+        status = "present"
+        requires_approval = False
+        
+        # Check for issues that require approval
+        if not validation_data["time_window_valid"]:
+            status = "late"
+            requires_approval = True
+        
+        if validation_data["location_required"] and not verification_data["location_verified"]:
+            status = "remote_unverified"
+            requires_approval = True
+        
+        if verification_data["face_verified"] is False and verification_data.get("face_confidence", 0) < 0.7:
+            status = "identity_unverified"
+            requires_approval = True
+        
+        # Create attendance record
+        attendance = models.Attendance(
+            employee_id=employee.id,
+            date=date.today(),
+            check_in_time=datetime.now().time(),
+            status=status,
+            location_lat=verification_data.get("location_lat"),
+            location_lon=verification_data.get("location_lon"),
+            distance_from_office=verification_data.get("distance_from_office"),
+            face_confidence=verification_data.get("face_confidence", 0.0),
+            is_wfh=wfh_request is not None,
+            requires_approval=requires_approval,
+            shift_name=validation_data.get("shift_name", "Default"),
+            grace_period_used=validation_data.get("grace_period_used", False),
+            verification_data={
+                "face_verified": verification_data["face_verified"],
+                "location_verified": verification_data["location_verified"],
+                "time_window_valid": validation_data["time_window_valid"]
+            }
+        )
+        
+        self.db.add(attendance)
+        self.db.commit()
+        self.db.refresh(attendance)
+        
+        # Send notifications if approval required
+        if requires_approval:
+            await self._send_approval_notification(employee, attendance, status)
+        
+        return {
+            "success": True,
+            "message": "Attendance marked successfully",
+            "attendance_id": attendance.id,
+            "status": status,
+            "requires_approval": requires_approval,
+            "check_in_time": attendance.check_in_time.strftime("%H:%M"),
+            "verification_summary": {
+                "face_verified": verification_data["face_verified"],
+                "location_verified": verification_data["location_verified"],
+                "time_window_valid": validation_data["time_window_valid"]
+            }
+        }
+    
+    def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Calculate distance between two coordinates in meters"""
+        from math import radians, cos, sin, asin, sqrt
+        
+        # Convert to radians
+        lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+        
+        # Haversine formula
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a))
+        r = 6371000  # Radius of earth in meters
+        
+        return c * r
+    
+    async def _send_approval_notification(
+        self, 
+        employee: models.Employee, 
+        attendance: models.Attendance, 
+        status: str
+    ):
+        """Send notification for attendance requiring approval"""
+        try:
+            # Get manager
+            manager = self.db.query(models.User).filter(
+                models.User.role.in_(["manager", "hr", "admin"])
+            ).first()
+            
+            if manager:
+                await self.notification_service.create_notification(
+                    user_id=manager.id,
+                    title=f"Attendance Approval Required",
+                    message=f"{employee.first_name} {employee.last_name} marked attendance with status: {status}",
+                    type="attendance_approval",
+                    action_url=f"/attendance/approvals/{attendance.id}"
+                )
+        except Exception as e:
+            logger.error(f"Failed to send approval notification: {str(e)}")
+    
+    async def approve_attendance(self, attendance_id: int, approved_by: int, notes: Optional[str] = None) -> Dict[str, Any]:
+        """Approve attendance record"""
+        
+        attendance = self.db.query(models.Attendance).filter(models.Attendance.id == attendance_id).first()
+        if not attendance:
+            return {"success": False, "error": "Attendance record not found"}
+        
+        if not attendance.requires_approval:
+            return {"success": False, "error": "Attendance does not require approval"}
+        
+        # Update attendance
+        attendance.requires_approval = False
+        attendance.approved_by = approved_by
+        attendance.approved_at = datetime.utcnow()
+        attendance.approval_notes = notes
+        
+        # Update status to approved version
+        if attendance.status == "late":
+            attendance.status = "present_late"
+        elif attendance.status == "remote_unverified":
+            attendance.status = "remote_approved"
+        elif attendance.status == "identity_unverified":
+            attendance.status = "present_approved"
+        
+        self.db.commit()
+        
+        # Notify employee
+        employee = self.db.query(models.Employee).filter(models.Employee.id == attendance.employee_id).first()
+        if employee and employee.user:
+            await self.notification_service.create_notification(
+                user_id=employee.user.id,
+                title="Attendance Approved",
+                message=f"Your attendance for {attendance.date} has been approved",
+                type="attendance_approved"
+            )
+        
+        return {
+            "success": True,
+            "message": "Attendance approved successfully",
+            "new_status": attendance.status
+        }
     
     async def _perform_pre_checks(self, employee_id: int) -> Dict[str, Any]:
         """

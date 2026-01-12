@@ -3,7 +3,7 @@ Multi-Channel Notification Service
 Supports: Email, SMS, WhatsApp
 """
 import os
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app import models
@@ -98,6 +98,508 @@ class NotificationService:
     
     # ========================================
     # SMS NOTIFICATIONS (Twilio)
+    # ========================================
+    
+    async def send_sms(
+        self,
+        to_phone: str,
+        message: str
+    ) -> bool:
+        """Send SMS notification via Twilio"""
+        
+        if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+            self._log_notification(
+                user_phone=to_phone,
+                type="sms",
+                subject="SMS",
+                message=message,
+                status="failed",
+                error_message="Twilio credentials not configured"
+            )
+            return False
+        
+        try:
+            from twilio.rest import Client
+            
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            
+            message = client.messages.create(
+                body=message,
+                from_=TWILIO_PHONE_NUMBER,
+                to=to_phone
+            )
+            
+            # Log successful notification
+            self._log_notification(
+                user_phone=to_phone,
+                type="sms",
+                subject="SMS",
+                message=message.body,
+                status="sent",
+                external_id=message.sid
+            )
+            
+            return True
+            
+        except Exception as e:
+            # Log failed notification
+            self._log_notification(
+                user_phone=to_phone,
+                type="sms",
+                subject="SMS",
+                message=message,
+                status="failed",
+                error_message=str(e)
+            )
+            return False
+    
+    # ========================================
+    # WHATSAPP NOTIFICATIONS
+    # ========================================
+    
+    async def send_whatsapp(
+        self,
+        to_phone: str,
+        message: str,
+        template_name: Optional[str] = None
+    ) -> bool:
+        """Send WhatsApp notification"""
+        
+        if not WHATSAPP_API_KEY:
+            self._log_notification(
+                user_phone=to_phone,
+                type="whatsapp",
+                subject="WhatsApp",
+                message=message,
+                status="failed",
+                error_message="WhatsApp API key not configured"
+            )
+            return False
+        
+        try:
+            # Using Twilio WhatsApp API
+            if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+                from twilio.rest import Client
+                
+                client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+                
+                # Format phone number for WhatsApp
+                whatsapp_to = f"whatsapp:{to_phone}"
+                whatsapp_from = f"whatsapp:{WHATSAPP_PHONE_NUMBER}"
+                
+                message = client.messages.create(
+                    body=message,
+                    from_=whatsapp_from,
+                    to=whatsapp_to
+                )
+                
+                # Log successful notification
+                self._log_notification(
+                    user_phone=to_phone,
+                    type="whatsapp",
+                    subject="WhatsApp",
+                    message=message.body,
+                    status="sent",
+                    external_id=message.sid
+                )
+                
+                return True
+            
+            # Alternative: Direct WhatsApp Business API
+            else:
+                import requests
+                
+                url = "https://graph.facebook.com/v17.0/YOUR_PHONE_NUMBER_ID/messages"
+                headers = {
+                    "Authorization": f"Bearer {WHATSAPP_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                
+                data = {
+                    "messaging_product": "whatsapp",
+                    "to": to_phone,
+                    "type": "text",
+                    "text": {"body": message}
+                }
+                
+                response = requests.post(url, headers=headers, json=data)
+                
+                if response.status_code == 200:
+                    # Log successful notification
+                    self._log_notification(
+                        user_phone=to_phone,
+                        type="whatsapp",
+                        subject="WhatsApp",
+                        message=message,
+                        status="sent",
+                        external_id=response.json().get("messages", [{}])[0].get("id")
+                    )
+                    return True
+                else:
+                    raise Exception(f"WhatsApp API error: {response.text}")
+            
+        except Exception as e:
+            # Log failed notification
+            self._log_notification(
+                user_phone=to_phone,
+                type="whatsapp",
+                subject="WhatsApp",
+                message=message,
+                status="failed",
+                error_message=str(e)
+            )
+            return False
+    
+    # ========================================
+    # IN-APP NOTIFICATIONS
+    # ========================================
+    
+    async def create_notification(
+        self,
+        user_id: int,
+        title: str,
+        message: str,
+        type: str = "info",
+        action_url: Optional[str] = None,
+        notification_data: Optional[dict] = None
+    ) -> bool:
+        """Create in-app notification"""
+        
+        try:
+            notification = models.InAppNotification(
+                user_id=user_id,
+                title=title,
+                message=message,
+                type=type,
+                action_url=action_url,
+                notification_data=notification_data or {}
+            )
+            
+            self.db.add(notification)
+            self.db.commit()
+            self.db.refresh(notification)
+            
+            # Send real-time notification via WebSocket if available
+            await self._send_realtime_notification(user_id, {
+                "id": notification.id,
+                "title": title,
+                "message": message,
+                "type": type,
+                "action_url": action_url,
+                "created_at": notification.created_at.isoformat()
+            })
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error creating in-app notification: {str(e)}")
+            return False
+    
+    # ========================================
+    # MULTI-CHANNEL NOTIFICATION
+    # ========================================
+    
+    async def send_multi_channel_notification(
+        self,
+        user_id: int,
+        title: str,
+        message: str,
+        channels: List[str] = ["in_app"],
+        email_subject: Optional[str] = None,
+        email_html: Optional[str] = None
+    ) -> Dict[str, bool]:
+        """Send notification across multiple channels"""
+        
+        results = {}
+        
+        # Get user details
+        user = self.db.query(models.User).filter(models.User.id == user_id).first()
+        if not user:
+            return {"error": "User not found"}
+        
+        # Get employee details for phone number
+        employee = self.db.query(models.Employee).filter(models.Employee.user_id == user_id).first()
+        
+        # Send in-app notification
+        if "in_app" in channels:
+            results["in_app"] = await self.create_notification(
+                user_id=user_id,
+                title=title,
+                message=message
+            )
+        
+        # Send email notification
+        if "email" in channels and user.email:
+            results["email"] = await self.send_email(
+                to_email=user.email,
+                subject=email_subject or title,
+                body=message,
+                html_body=email_html
+            )
+        
+        # Send SMS notification
+        if "sms" in channels and employee and employee.phone:
+            results["sms"] = await self.send_sms(
+                to_phone=employee.phone,
+                message=f"{title}: {message}"
+            )
+        
+        # Send WhatsApp notification
+        if "whatsapp" in channels and employee and employee.phone:
+            results["whatsapp"] = await self.send_whatsapp(
+                to_phone=employee.phone,
+                message=f"{title}: {message}"
+            )
+        
+        return results
+    
+    # ========================================
+    # NOTIFICATION TEMPLATES
+    # ========================================
+    
+    def get_notification_template(self, template_name: str, **kwargs) -> Dict[str, str]:
+        """Get notification template with variables replaced"""
+        
+        templates = {
+            "attendance_marked": {
+                "title": "Attendance Marked",
+                "message": "Your attendance has been marked successfully at {time}",
+                "email_subject": "Attendance Confirmation - {date}",
+                "email_html": """
+                <h3>Attendance Confirmation</h3>
+                <p>Dear {employee_name},</p>
+                <p>Your attendance has been marked successfully:</p>
+                <ul>
+                    <li><strong>Date:</strong> {date}</li>
+                    <li><strong>Time:</strong> {time}</li>
+                    <li><strong>Status:</strong> {status}</li>
+                </ul>
+                <p>Best regards,<br>HR Team</p>
+                """
+            },
+            "leave_approved": {
+                "title": "Leave Request Approved",
+                "message": "Your leave request from {start_date} to {end_date} has been approved",
+                "email_subject": "Leave Request Approved",
+                "email_html": """
+                <h3>Leave Request Approved</h3>
+                <p>Dear {employee_name},</p>
+                <p>Your leave request has been approved:</p>
+                <ul>
+                    <li><strong>From:</strong> {start_date}</li>
+                    <li><strong>To:</strong> {end_date}</li>
+                    <li><strong>Days:</strong> {days}</li>
+                    <li><strong>Reason:</strong> {reason}</li>
+                </ul>
+                <p>Best regards,<br>HR Team</p>
+                """
+            },
+            "payslip_ready": {
+                "title": "Payslip Ready",
+                "message": "Your payslip for {month} is ready for download",
+                "email_subject": "Payslip Available - {month}",
+                "email_html": """
+                <h3>Payslip Available</h3>
+                <p>Dear {employee_name},</p>
+                <p>Your payslip for {month} is now available for download.</p>
+                <p>Net Salary: ₹{net_salary}</p>
+                <p>Please log in to the employee portal to download your payslip.</p>
+                <p>Best regards,<br>HR Team</p>
+                """
+            },
+            "meeting_reminder": {
+                "title": "Meeting Reminder",
+                "message": "Reminder: {meeting_title} at {meeting_time}",
+                "email_subject": "Meeting Reminder - {meeting_title}",
+                "email_html": """
+                <h3>Meeting Reminder</h3>
+                <p>Dear {employee_name},</p>
+                <p>This is a reminder for your upcoming meeting:</p>
+                <ul>
+                    <li><strong>Title:</strong> {meeting_title}</li>
+                    <li><strong>Date:</strong> {meeting_date}</li>
+                    <li><strong>Time:</strong> {meeting_time}</li>
+                    <li><strong>Location:</strong> {meeting_location}</li>
+                </ul>
+                <p>Best regards,<br>Meeting Organizer</p>
+                """
+            }
+        }
+        
+        template = templates.get(template_name, {})
+        
+        # Replace variables in template
+        result = {}
+        for key, value in template.items():
+            if isinstance(value, str):
+                result[key] = value.format(**kwargs)
+            else:
+                result[key] = value
+        
+        return result
+    
+    # ========================================
+    # NOTIFICATION PREFERENCES
+    # ========================================
+    
+    def get_user_notification_preferences(self, user_id: int) -> Dict[str, List[str]]:
+        """Get user's notification preferences"""
+        
+        # Get from database or return defaults
+        preferences = self.db.query(models.NotificationPreference).filter(
+            models.NotificationPreference.user_id == user_id
+        ).first()
+        
+        if preferences:
+            return preferences.preferences
+        else:
+            # Default preferences
+            return {
+                "attendance": ["in_app", "email"],
+                "leave": ["in_app", "email", "sms"],
+                "payroll": ["in_app", "email"],
+                "meetings": ["in_app", "email"],
+                "general": ["in_app"]
+            }
+    
+    def update_notification_preferences(
+        self, 
+        user_id: int, 
+        preferences: Dict[str, List[str]]
+    ) -> bool:
+        """Update user's notification preferences"""
+        
+        try:
+            existing = self.db.query(models.NotificationPreference).filter(
+                models.NotificationPreference.user_id == user_id
+            ).first()
+            
+            if existing:
+                existing.preferences = preferences
+                existing.updated_at = datetime.utcnow()
+            else:
+                new_pref = models.NotificationPreference(
+                    user_id=user_id,
+                    preferences=preferences
+                )
+                self.db.add(new_pref)
+            
+            self.db.commit()
+            return True
+            
+        except Exception as e:
+            print(f"Error updating notification preferences: {str(e)}")
+            return False
+    
+    # ========================================
+    # HELPER METHODS
+    # ========================================
+    
+    def _log_notification(
+        self,
+        user_email: Optional[str] = None,
+        user_phone: Optional[str] = None,
+        type: str = "email",
+        subject: str = "",
+        message: str = "",
+        status: str = "sent",
+        error_message: Optional[str] = None,
+        external_id: Optional[str] = None
+    ):
+        """Log notification for tracking and debugging"""
+        
+        try:
+            log_entry = models.NotificationLog(
+                recipient_email=user_email,
+                recipient_phone=user_phone,
+                notification_type=type,
+                subject=subject,
+                message=message,
+                status=status,
+                error_message=error_message,
+                external_id=external_id
+            )
+            
+            self.db.add(log_entry)
+            self.db.commit()
+            
+        except Exception as e:
+            print(f"Error logging notification: {str(e)}")
+    
+    async def _send_realtime_notification(self, user_id: int, notification_data: dict):
+        """Send real-time notification via WebSocket"""
+        try:
+            # This would integrate with WebSocket manager
+            # For now, just pass
+            pass
+        except Exception as e:
+            print(f"Error sending real-time notification: {str(e)}")
+    
+    # ========================================
+    # BULK NOTIFICATIONS
+    # ========================================
+    
+    async def send_bulk_notification(
+        self,
+        user_ids: List[int],
+        title: str,
+        message: str,
+        channels: List[str] = ["in_app"],
+        template_name: Optional[str] = None,
+        template_data: Optional[Dict] = None
+    ) -> Dict[str, Any]:
+        """Send notification to multiple users"""
+        
+        results = {
+            "successful": [],
+            "failed": [],
+            "total": len(user_ids)
+        }
+        
+        for user_id in user_ids:
+            try:
+                # Get user preferences
+                preferences = self.get_user_notification_preferences(user_id)
+                
+                # Filter channels based on preferences
+                if template_name:
+                    user_channels = preferences.get(template_name.split('_')[0], channels)
+                else:
+                    user_channels = channels
+                
+                # Prepare template data if provided
+                if template_name and template_data:
+                    user = self.db.query(models.User).filter(models.User.id == user_id).first()
+                    employee = self.db.query(models.Employee).filter(models.Employee.user_id == user_id).first()
+                    
+                    template_data.update({
+                        "employee_name": f"{employee.first_name} {employee.last_name}" if employee else user.email
+                    })
+                    
+                    template = self.get_notification_template(template_name, **template_data)
+                    title = template.get("title", title)
+                    message = template.get("message", message)
+                
+                # Send notification
+                result = await self.send_multi_channel_notification(
+                    user_id=user_id,
+                    title=title,
+                    message=message,
+                    channels=user_channels
+                )
+                
+                results["successful"].append({
+                    "user_id": user_id,
+                    "channels": result
+                })
+                
+            except Exception as e:
+                results["failed"].append({
+                    "user_id": user_id,
+                    "error": str(e)
+                })
+        
+        return results
     # ========================================
     
     async def send_sms(

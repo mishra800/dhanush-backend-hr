@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/authcontext';
 import ProfileImageUpload from '../components/ProfileImageUpload';
+import ProfileValidation from '../components/ProfileValidation';
 import api from '../api/axios';
 
 export default function Profile() {
@@ -14,7 +15,24 @@ export default function Profile() {
     last_name: '',
     phone: '',
     department: '',
-    position: ''
+    position: '',
+    address: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    date_of_birth: ''
+  });
+  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [missingFields, setMissingFields] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  // Use validation hook
+  const validation = ProfileValidation({ 
+    formData, 
+    onValidationChange: (isValid, errors) => {
+      setIsFormValid(isValid);
+      setValidationErrors(errors);
+    }
   });
 
   useEffect(() => {
@@ -33,8 +51,21 @@ export default function Profile() {
           last_name: response.data.employee.last_name || '',
           phone: response.data.employee.phone || '',
           department: response.data.employee.department || '',
-          position: response.data.employee.position || ''
+          position: response.data.employee.position || '',
+          address: response.data.employee.address || '',
+          emergency_contact_name: response.data.employee.emergency_contact_name || '',
+          emergency_contact_phone: response.data.employee.emergency_contact_phone || '',
+          date_of_birth: response.data.employee.date_of_birth ? response.data.employee.date_of_birth.split('T')[0] : ''
         });
+      }
+
+      // Load profile completion status
+      try {
+        const statusResponse = await api.get('/employees/me/profile-status');
+        setProfileCompletion(statusResponse.data.profile_completion);
+        setMissingFields(statusResponse.data.missing_fields);
+      } catch (statusError) {
+        console.log('Error loading profile status:', statusError);
       }
 
       // Load profile image
@@ -54,14 +85,26 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
+    if (!isFormValid) {
+      alert('Please fix the validation errors before saving.');
+      return;
+    }
+
     try {
       setLoading(true);
-      await api.put('/employees/me/profile', formData);
+      const response = await api.put('/employees/me/profile', formData);
       alert('Profile updated successfully!');
       setEditing(false);
+      
+      // Update profile completion from response
+      if (response.data.profile_completion) {
+        setProfileCompletion(response.data.profile_completion);
+      }
+      
       loadProfile();
     } catch (error) {
-      alert('Failed to update profile: ' + (error.response?.data?.detail || error.message));
+      const errorMessage = error.response?.data?.detail || error.message;
+      alert('Failed to update profile: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,6 +134,28 @@ export default function Profile() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
               <p className="text-gray-600">Manage your personal information and profile photo</p>
+              
+              {/* Profile Completion Status */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Profile Completion</span>
+                  <span className="text-sm font-medium text-gray-900">{profileCompletion}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      profileCompletion >= 80 ? 'bg-green-600' : 
+                      profileCompletion >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                    }`}
+                    style={{ width: `${profileCompletion}%` }}
+                  ></div>
+                </div>
+                {missingFields.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Missing: {missingFields.join(', ').replace(/_/g, ' ')}
+                  </p>
+                )}
+              </div>
             </div>
             <button
               onClick={() => setEditing(!editing)}
@@ -109,27 +174,37 @@ export default function Profile() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
                   {editing ? (
-                    <input
-                      type="text"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={formData.first_name}
+                        onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                        className={validation.getFieldClassName('first_name', 'w-full px-3 py-2 border rounded-lg focus:ring-2')}
+                      />
+                      {validation.hasError('first_name') && (
+                        <p className="text-red-500 text-xs mt-1">{validation.getFieldError('first_name')}</p>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-gray-900">{formData.first_name || 'Not set'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
                   {editing ? (
-                    <input
-                      type="text"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={formData.last_name}
+                        onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                        className={validation.getFieldClassName('last_name', 'w-full px-3 py-2 border rounded-lg focus:ring-2')}
+                      />
+                      {validation.hasError('last_name') && (
+                        <p className="text-red-500 text-xs mt-1">{validation.getFieldError('last_name')}</p>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-gray-900">{formData.last_name || 'Not set'}</p>
                   )}
@@ -144,26 +219,37 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 {editing ? (
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <div>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className={validation.getFieldClassName('phone', 'w-full px-3 py-2 border rounded-lg focus:ring-2')}
+                      placeholder="Enter your phone number"
+                    />
+                    {validation.hasError('phone') && (
+                      <p className="text-red-500 text-xs mt-1">{validation.getFieldError('phone')}</p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-gray-900">{formData.phone || 'Not set'}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                 {editing ? (
-                  <input
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) => setFormData({...formData, department: e.target.value})}
+                      className={validation.getFieldClassName('department', 'w-full px-3 py-2 border rounded-lg focus:ring-2')}
+                    />
+                    {validation.hasError('department') && (
+                      <p className="text-red-500 text-xs mt-1">{validation.getFieldError('department')}</p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-gray-900">{formData.department || 'Not set'}</p>
                 )}
@@ -188,14 +274,101 @@ export default function Profile() {
                 <p className="text-gray-900 capitalize">{user?.role || 'Employee'}</p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                {editing ? (
+                  <div>
+                    <input
+                      type="date"
+                      value={formData.date_of_birth}
+                      onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                      className={validation.getFieldClassName('date_of_birth', 'w-full px-3 py-2 border rounded-lg focus:ring-2')}
+                    />
+                    {validation.hasError('date_of_birth') && (
+                      <p className="text-red-500 text-xs mt-1">{validation.getFieldError('date_of_birth')}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-900">{formData.date_of_birth || 'Not set'}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                {editing ? (
+                  <textarea
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter your full address"
+                  />
+                ) : (
+                  <p className="text-gray-900">{formData.address || 'Not set'}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Name</label>
+                  {editing ? (
+                    <input
+                      type="text"
+                      value={formData.emergency_contact_name}
+                      onChange={(e) => setFormData({...formData, emergency_contact_name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Emergency contact name"
+                    />
+                  ) : (
+                    <p className="text-gray-900">{formData.emergency_contact_name || 'Not set'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Phone</label>
+                  {editing ? (
+                    <div>
+                      <input
+                        type="tel"
+                        value={formData.emergency_contact_phone}
+                        onChange={(e) => setFormData({...formData, emergency_contact_phone: e.target.value})}
+                        className={validation.getFieldClassName('emergency_contact_phone', 'w-full px-3 py-2 border rounded-lg focus:ring-2')}
+                        placeholder="Emergency contact phone"
+                      />
+                      {validation.hasError('emergency_contact_phone') && (
+                        <p className="text-red-500 text-xs mt-1">{validation.getFieldError('emergency_contact_phone')}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-900">{formData.emergency_contact_phone || 'Not set'}</p>
+                  )}
+                </div>
+              </div>
+
               {editing && (
-                <button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
-                >
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={loading || !isFormValid}
+                    className={`w-full py-2 rounded-lg transition ${
+                      loading || !isFormValid 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    } text-white`}
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  
+                  {!isFormValid && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-red-800 text-sm font-medium">Please fix the following errors:</p>
+                      <ul className="text-red-700 text-xs mt-1 list-disc list-inside">
+                        {Object.values(validationErrors).map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

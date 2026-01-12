@@ -34,7 +34,10 @@ from app.routers import (
     candidate_portal,
     assessment,
     notifications,
-    ai_assistant
+    ai_assistant,
+    meetings,
+    meeting_rooms,
+    documents
 )
 
 # Create database tables
@@ -105,6 +108,9 @@ app.include_router(candidate_portal.router)
 app.include_router(assessment.router)
 app.include_router(notifications.router)
 app.include_router(ai_assistant.router)
+app.include_router(meetings.router)
+app.include_router(meeting_rooms.router)
+app.include_router(documents.router)
 
 # Mount static files for serving uploaded resumes
 uploads_dir = "uploads"

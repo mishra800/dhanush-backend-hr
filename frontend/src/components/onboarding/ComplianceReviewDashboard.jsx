@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import InfrastructureRequestButton from './InfrastructureRequestButton';
 
 export default function ComplianceReviewDashboard() {
   const [pendingApprovals, setPendingApprovals] = useState([]);

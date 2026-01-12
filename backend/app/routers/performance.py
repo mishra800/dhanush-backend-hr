@@ -199,3 +199,126 @@ def analyze_engagement(data: schemas.EngagementAnalysisRequest):
         "engagement_score": max(engagement_score, 1),
         "topics": sentiment_res["themes"]
     }
+
+# --- Advanced Performance Analytics ---
+
+@router.get("/employee/{employee_id}/score")
+def get_employee_performance_score(employee_id: int, db: Session = Depends(database.get_db)):
+    """Get comprehensive performance score for an employee"""
+    from app.performance_service import PerformanceService
+    return PerformanceService.calculate_employee_performance_score(employee_id, db)
+
+@router.get("/employee/{employee_id}/trends")
+def get_performance_trends(employee_id: int, months: int = 12, db: Session = Depends(database.get_db)):
+    """Get performance trends over time"""
+    from app.performance_service import PerformanceService
+    return PerformanceService.get_performance_trends(employee_id, db, months)
+
+@router.get("/employee/{employee_id}/insights")
+def get_performance_insights(employee_id: int, db: Session = Depends(database.get_db)):
+    """Get AI-powered performance insights and recommendations"""
+    from app.performance_service import PerformanceService
+    return PerformanceService.generate_performance_insights(employee_id, db)
+
+@router.get("/team/{manager_id}/analytics")
+def get_team_performance_analytics(manager_id: int, db: Session = Depends(database.get_db)):
+    """Get performance analytics for a manager's team"""
+    from app.performance_service import PerformanceService
+    return PerformanceService.get_team_performance_analytics(manager_id, db)
+
+@router.get("/kpis/employee/{employee_id}")
+def get_employee_kpis(employee_id: int, db: Session = Depends(database.get_db)):
+    """Get KPI tracking data for an employee"""
+    # Get goals as KPIs
+    goals = db.query(models.Goal).filter(models.Goal.employee_id == employee_id).all()
+    
+    kpis = []
+    for goal in goals:
+        kpi = {
+            "id": goal.id,
+            "title": goal.title,
+            "description": goal.description,
+            "target_date": goal.due_date.isoformat() if goal.due_date else None,
+            "status": goal.status,
+            "progress": 100 if goal.status == "completed" else 50,  # Mock progress
+            "category": "Goal",
+            "weight": 1.0
+        }
+        kpis.append(kpi)
+    
+    # Calculate overall KPI score
+    total_kpis = len(kpis)
+    completed_kpis = len([k for k in kpis if k["status"] == "completed"])
+    kpi_score = (completed_kpis / total_kpis * 100) if total_kpis > 0 else 0
+    
+    return {
+        "employee_id": employee_id,
+        "kpis": kpis,
+        "summary": {
+            "total_kpis": total_kpis,
+            "completed_kpis": completed_kpis,
+            "in_progress": len([k for k in kpis if k["status"] == "in_progress"]),
+            "overall_score": round(kpi_score, 1)
+        }
+    }
+
+@router.post("/360-review")
+def create_360_review(
+    employee_id: int,
+    reviewers: List[int],
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Initiate a 360-degree performance review"""
+    # Create review records for each reviewer
+    reviews_created = []
+    
+    for reviewer_id in reviewers:
+        review = models.PerformanceReview(
+            employee_id=employee_id,
+            reviewer_id=reviewer_id,
+            rating=0.0,  # To be filled by reviewer
+            comments="",
+            review_type="360",
+            review_date=datetime.now()
+        )
+        db.add(review)
+        reviews_created.append(reviewer_id)
+    
+    db.commit()
+    
+    return {
+        "message": "360-degree review initiated",
+        "employee_id": employee_id,
+        "reviewers": reviews_created,
+        "status": "pending"
+    }
+
+@router.get("/360-review/{employee_id}")
+def get_360_review_status(employee_id: int, db: Session = Depends(database.get_db)):
+    """Get status of 360-degree review for an employee"""
+    reviews = db.query(models.PerformanceReview).filter(
+        models.PerformanceReview.employee_id == employee_id,
+        models.PerformanceReview.review_type == "360"
+    ).all()
+    
+    if not reviews:
+        return {"message": "No 360-degree review found for this employee"}
+    
+    completed_reviews = [r for r in reviews if r.rating > 0]
+    pending_reviews = [r for r in reviews if r.rating == 0]
+    
+    # Calculate average rating from completed reviews
+    avg_rating = 0
+    if completed_reviews:
+        avg_rating = sum(r.rating for r in completed_reviews) / len(completed_reviews)
+    
+    return {
+        "employee_id": employee_id,
+        "total_reviewers": len(reviews),
+        "completed": len(completed_reviews),
+        "pending": len(pending_reviews),
+        "completion_rate": round((len(completed_reviews) / len(reviews)) * 100, 1),
+        "average_rating": round(avg_rating, 2),
+        "status": "completed" if len(pending_reviews) == 0 else "in_progress"
+    }

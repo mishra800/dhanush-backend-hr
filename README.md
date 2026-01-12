@@ -1,266 +1,139 @@
-# 🚀 HR Management System - Talent Intelligence Platform
+# HR Management System - Backend API
 
-## Overview
+A comprehensive FastAPI-based backend for HR Management System with features including employee management, attendance tracking, payroll processing, recruitment, and more.
 
-Enterprise-grade HR Management System with a streamlined **6-step Talent Intelligence Recruitment Workflow**.
+## 🚀 Features
 
----
+- **Authentication & Authorization** - JWT-based secure authentication
+- **Employee Management** - Complete employee lifecycle management
+- **Attendance System** - Real-time attendance tracking with face recognition
+- **Payroll Management** - Automated payroll processing and calculations
+- **Recruitment System** - End-to-end recruitment workflow
+- **Leave Management** - Leave requests and approval system
+- **Asset Management** - IT asset tracking and management
+- **Onboarding System** - Streamlined employee onboarding
+- **Performance Management** - Employee performance tracking
+- **Analytics & Reporting** - Comprehensive HR analytics
+
+## 🛠️ Technology Stack
+
+- **Framework**: FastAPI (Python)
+- **Database**: PostgreSQL
+- **Authentication**: JWT tokens
+- **File Processing**: Resume parsing, document handling
+- **AI Integration**: OpenAI/Gemini for intelligent features
+- **Face Recognition**: For attendance system
+- **Email**: SMTP integration for notifications
+
+## 📋 Prerequisites
+
+- Python 3.8+
+- PostgreSQL database
+- pip (Python package manager)
+
+## 🚀 Quick Start
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/mishra800/hr-backened-dhanush.git
+cd hr-backened-dhanush
+```
+
+### 2. Install dependencies
+```bash
+pip install -r backend/requirements.txt
+```
+
+### 3. Set up environment variables
+```bash
+cp backend/.env.example backend/.env
+# Edit .env with your database credentials and API keys
+```
+
+### 4. Run the application
+```bash
+cd backend
+python main.py
+```
+
+The API will be available at `http://localhost:8000`
+
+## 📚 API Documentation
+
+Once running, visit:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+## 🌐 Deployment
+
+This backend is ready for deployment on:
+- **Vercel** (Recommended)
+- **Railway**
+- **Heroku**
+- **AWS Lambda**
+
+### Deploy to Vercel
+1. Install Vercel CLI: `npm i -g vercel`
+2. Run: `vercel` in the backend directory
+3. Set environment variables in Vercel dashboard
+
+## 🔧 Environment Variables
+
+Required environment variables:
+
+```env
+DATABASE_URL=postgresql://user:password@host:port/database
+SECRET_KEY=your-jwt-secret-key
+ENVIRONMENT=production
+DEBUG=False
+```
+
+Optional (for enhanced features):
+```env
+OPENAI_API_KEY=your-openai-key
+GEMINI_API_KEY=your-gemini-key
+SMTP_SERVER=smtp.gmail.com
+SMTP_USERNAME=your-email
+SMTP_PASSWORD=your-password
+```
 
 ## 📁 Project Structure
 
 ```
-├── backend/                          # Python FastAPI backend
-│   ├── app/
-│   │   ├── routers/                  # API endpoints
-│   │   │   ├── talent_pool.py        # NEW: Talent pool management
-│   │   │   ├── agency_portal.py      # NEW: Agency vendor portal
-│   │   │   ├── bulk_upload.py        # NEW: Bulk resume upload
-│   │   │   ├── recruitment_enhanced.py
-│   │   │   └── ...
-│   │   ├── models.py                 # Database models
-│   │   ├── models_v2.py              # NEW: Enhanced models
-│   │   ├── notification_service.py   # NEW: Multi-channel notifications
-│   │   └── ...
-│   ├── talent_intelligence_schema.sql # NEW: Database migration
-│   └── main.py                       # Application entry point
-│
-├── frontend/                         # React frontend
-│   └── src/
-│       ├── pages/                    # Application pages
-│       ├── components/               # Reusable components
-│       └── ...
-│
-└── docs/                             # Documentation
-    ├── TRANSFORMATION_SUMMARY.md     # Executive summary
-    ├── TALENT_INTELLIGENCE_MIGRATION_PLAN.md
-    ├── IMPLEMENTATION_GUIDE.md
-    ├── NEW_6_STEP_WORKFLOW_GUIDE.md
-    ├── FEATURE_COMPARISON.md
-    ├── QUICK_START_CHECKLIST.md
-    ├── PRODUCTION_SETUP.md
-    └── START_SERVERS.md
+backend/
+├── app/
+│   ├── routers/          # API route handlers
+│   ├── models.py         # Database models
+│   ├── schemas.py        # Pydantic schemas
+│   ├── database.py       # Database configuration
+│   └── services/         # Business logic services
+├── main.py              # FastAPI application entry point
+├── requirements.txt     # Python dependencies
+└── vercel.json         # Vercel deployment config
 ```
 
----
+## 🔐 Security Features
 
-## 🎯 New 6-Step Recruitment Workflow
+- JWT token authentication
+- Password hashing with bcrypt
+- CORS protection
+- Input validation with Pydantic
+- SQL injection prevention with SQLAlchemy ORM
 
-### Old (10 Steps) → New (6 Steps)
+## 🤝 Contributing
 
-1. **Requisition & Setup** (merged 2 steps)
-   - Create job + Generate unique application link
-   - Share via email/WhatsApp/website
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-2. **Sourcing & Screening** (merged 2 steps)
-   - Bulk upload (50-100 resumes at once)
-   - Agency submissions
-   - Talent pool search
-   - Blind hiring mode
+## 📄 License
 
-3. **Evaluation** (merged 2 steps)
-   - Assessment + AI Interview + Human Interview
-   - Auto-scheduler with calendar sync
+This project is licensed under the MIT License.
 
-4. **Selection**
-   - Rank candidates
-   - Move rejected to Talent Pool
+## 🆘 Support
 
-5. **Offer**
-   - E-signature integration
-   - WhatsApp notifications
-
-6. **Onboarding** (merged 2 steps)
-   - Background check + Document verification
-   - Employee profile creation
-
----
-
-## ✨ Key Features
-
-### Recruitment
-- ✅ 6-step streamlined workflow (40% faster)
-- ✅ Talent Pool (TRM) - Never lose good candidates
-- ✅ Agency Portal - Vendor management
-- ✅ Bulk Resume Upload - 100 files at once
-- ✅ Blind Hiring Mode - Reduce bias
-- ✅ LinkedIn One-Click Apply
-- ✅ Auto-Scheduler - Calendly-style
-- ✅ AI Resume Parsing & Scoring
-- ✅ WhatsApp/SMS Notifications
-
-### Employee Management
-- ✅ Attendance tracking with photo verification
-- ✅ Leave management
-- ✅ WFH requests
-- ✅ Performance reviews
-- ✅ Payroll management
-
-### Analytics
-- ✅ Recruitment pipeline metrics
-- ✅ Time-to-hire tracking
-- ✅ Source effectiveness
-- ✅ Agency performance
-- ✅ Talent pool analytics
-
----
-
-## 🚀 Quick Start
-
-### 1. Database Setup
-
-```bash
-# Backup existing database
-pg_dump -U postgres -d hr_system > backup.sql
-
-# Run migration
-psql -U postgres -d hr_system -f backend/talent_intelligence_schema.sql
-```
-
-### 2. Backend Setup
-
-```bash
-cd backend
-
-# Install dependencies
-pip install -r requirements.txt
-pip install twilio spacy pyresparser
-python -m spacy download en_core_web_sm
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your credentials
-
-# Start server
-python main.py
-```
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-### 4. Access Application
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-
----
-
-## 📚 Documentation
-
-### Essential Guides
-1. **TRANSFORMATION_SUMMARY.md** - Executive overview of changes
-2. **IMPLEMENTATION_GUIDE.md** - Step-by-step setup instructions
-3. **NEW_6_STEP_WORKFLOW_GUIDE.md** - User guide for new workflow
-4. **QUICK_START_CHECKLIST.md** - 5-week implementation checklist
-
-### Technical Docs
-- **TALENT_INTELLIGENCE_MIGRATION_PLAN.md** - Detailed migration strategy
-- **FEATURE_COMPARISON.md** - Old vs New feature comparison
-- **PRODUCTION_SETUP.md** - Production deployment guide
-- **START_SERVERS.md** - Server startup instructions
-
----
-
-## 💰 ROI
-
-### Per 100 Hires
-
-| Metric | Before | After | Savings |
-|--------|--------|-------|---------|
-| Time to Hire | 30 days | 18 days | 40% faster |
-| Cost per Hire | $5,000 | $3,000 | 40% cheaper |
-| Recruiter Hours | 2,000 hrs | 1,200 hrs | 800 hrs saved |
-| **Total Cost** | **$2.5M** | **$1.5M** | **$1M saved** |
-
----
-
-## 🔐 Default Credentials
-
-### Super Admin
-- Email: `admin@company.com`
-- Password: Check PRODUCTION_SETUP.md
-
-### Recruiter
-- Email: `recruiter@company.com`
-- Password: Check PRODUCTION_SETUP.md
-
----
-
-## 🛠️ Tech Stack
-
-### Backend
-- Python 3.9+
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- Twilio (SMS/WhatsApp)
-- spaCy (NLP)
-
-### Frontend
-- React 18
-- Vite
-- TailwindCSS
-- Recharts
-
----
-
-## 📞 Support
-
-For issues or questions:
-- Check documentation in root directory
-- Review API docs: http://localhost:8000/docs
-- Check logs: `backend/logs/`
-
----
-
-## 📈 Success Metrics
-
-### Target KPIs
-- Time to hire: < 18 days
-- Cost per hire: < $3,000
-- Candidate satisfaction: > 8/10
-- Offer acceptance rate: > 80%
-- Quality of hire: > 85%
-
----
-
-## 🎉 What's New
-
-### Version 2.0 - Talent Intelligence System
-
-**Released:** December 2025
-
-**Major Changes:**
-- ✅ Streamlined 10-step → 6-step workflow
-- ✅ Talent Pool (TRM) feature
-- ✅ Agency Portal
-- ✅ Bulk Resume Upload
-- ✅ WhatsApp/SMS Notifications
-- ✅ Blind Hiring Mode
-- ✅ Auto-Scheduler
-- ✅ Enhanced RBAC
-- ✅ Audit Logs
-
-**Performance:**
-- 40% faster hiring
-- 40% cost reduction
-- 85% time savings per task
-
----
-
-## 📝 License
-
-Proprietary - Internal Use Only
-
----
-
-**Built with ❤️ for modern recruitment teams**
+For support and questions:
+- Create an issue on GitHub
+- Check the API documentation at `/docs`
+- Review the deployment guide in `DEPLOYMENT_GUIDE.md`

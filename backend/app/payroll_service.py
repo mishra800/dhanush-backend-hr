@@ -490,3 +490,385 @@ class PayrollService:
         except Exception as e:
             logger.error(f"Error getting payroll summary: {str(e)}")
             return {"success": False, "error": str(e)}
+    def process_payroll_batch(self, month: str, employee_ids: List[int], calculated_by: int) -> Dict[str, Any]:
+        """Process payroll for multiple employees in a batch"""
+        
+        # Create batch record
+        batch = models.PayrollBatch(
+            month=month,
+            total_employees=len(employee_ids),
+            status="processing",
+            created_by=calculated_by
+        )
+        self.db.add(batch)
+        self.db.commit()
+        self.db.refresh(batch)
+        
+        results = {
+            "batch_id": batch.id,
+            "successful": [],
+            "failed": [],
+            "total": len(employee_ids)
+        }
+        
+        try:
+            for employee_id in employee_ids:
+                try:
+                    result = self.calculate_employee_payroll(
+                        employee_id=employee_id,
+                        month=month,
+                        calculated_by=calculated_by
+                    )
+                    
+                    if result["success"]:
+                        results["successful"].append({
+                            "employee_id": employee_id,
+                            "payroll_id": result["payroll"].id,
+                            "net_salary": result["payroll"].net_salary
+                        })
+                    else:
+                        results["failed"].append({
+                            "employee_id": employee_id,
+                            "error": result["error"]
+                        })
+                        
+                except Exception as e:
+                    results["failed"].append({
+                        "employee_id": employee_id,
+                        "error": str(e)
+                    })
+            
+            # Update batch status
+            batch.processed_employees = len(results["successful"])
+            batch.failed_employees = len(results["failed"])
+            batch.status = "completed" if len(results["failed"]) == 0 else "completed_with_errors"
+            batch.completed_at = datetime.utcnow()
+            
+            self.db.commit()
+            
+            return {
+                "success": True,
+                "results": results
+            }
+            
+        except Exception as e:
+            batch.status = "failed"
+            batch.error_message = str(e)
+            self.db.commit()
+            
+            return {
+                "success": False,
+                "error": str(e),
+                "results": results
+            }
+
+    def distribute_payslip(self, payroll_id: int, distribution_method: str = "email") -> Dict[str, Any]:
+        """Distribute payslip to employee"""
+        
+        payroll = self.db.query(models.Payroll).filter(models.Payroll.id == payroll_id).first()
+        if not payroll:
+            return {"success": False, "error": "Payroll record not found"}
+        
+        employee = self.db.query(models.Employee).filter(models.Employee.id == payroll.employee_id).first()
+        if not employee or not employee.user:
+            return {"success": False, "error": "Employee or user not found"}
+        
+        # Generate payslip
+        payslip_result = self.generate_payslip_data(payroll_id)
+        if not payslip_result["success"]:
+            return payslip_result
+        
+        # Create distribution record
+        distribution = models.PayslipDistribution(
+            payroll_id=payroll_id,
+            employee_id=payroll.employee_id,
+            distribution_method=distribution_method,
+            status="pending"
+        )
+        self.db.add(distribution)
+        self.db.commit()
+        self.db.refresh(distribution)
+        
+        try:
+            if distribution_method == "email":
+                # Send email with payslip
+                success = self._send_payslip_email(employee, payslip_result["payslip"])
+                if success:
+                    distribution.status = "sent"
+                    distribution.sent_at = datetime.utcnow()
+                else:
+                    distribution.status = "failed"
+                    distribution.error_message = "Failed to send email"
+            
+            elif distribution_method == "portal":
+                # Make available in employee portal
+                distribution.status = "available"
+                distribution.sent_at = datetime.utcnow()
+                
+                # Create notification
+                self.notification_service.create_notification(
+                    user_id=employee.user.id,
+                    title="Payslip Available",
+                    message=f"Your payslip for {payroll.month} is now available for download",
+                    type="payslip_available",
+                    action_url=f"/payroll/payslip/{payroll_id}"
+                )
+            
+            self.db.commit()
+            
+            return {
+                "success": True,
+                "distribution_id": distribution.id,
+                "status": distribution.status,
+                "message": f"Payslip distributed via {distribution_method}"
+            }
+            
+        except Exception as e:
+            distribution.status = "failed"
+            distribution.error_message = str(e)
+            self.db.commit()
+            
+            return {
+                "success": False,
+                "error": f"Failed to distribute payslip: {str(e)}"
+            }
+
+    def _send_payslip_email(self, employee: models.Employee, payslip_data: Dict[str, Any]) -> bool:
+        """Send payslip via email"""
+        try:
+            # Generate email content
+            subject = f"Payslip for {payslip_data['payroll_period']['month']}"
+            
+            html_content = self._generate_payslip_email_template(payslip_data)
+            
+            # Send email using notification service
+            return self.notification_service.send_email(
+                to_email=employee.user.email,
+                subject=subject,
+                body=f"Dear {employee.first_name},\n\nYour payslip for {payslip_data['payroll_period']['month']} is attached.\n\nBest regards,\nHR Team",
+                html_body=html_content
+            )
+        except Exception as e:
+            logger.error(f"Failed to send payslip email: {str(e)}")
+            return False
+
+    def _generate_payslip_email_template(self, payslip_data: Dict[str, Any]) -> str:
+        """Generate HTML email template for payslip"""
+        
+        employee = payslip_data["employee"]
+        period = payslip_data["payroll_period"]
+        earnings = payslip_data["earnings"]
+        deductions = payslip_data["deductions"]
+        summary = payslip_data["summary"]
+        
+        html_template = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .header {{ background-color: #f8f9fa; padding: 20px; text-align: center; }}
+                .payslip-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+                .payslip-table th, .payslip-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                .payslip-table th {{ background-color: #f2f2f2; }}
+                .summary {{ background-color: #e9ecef; padding: 15px; margin: 20px 0; }}
+                .amount {{ text-align: right; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>Dhanush Healthcare Pvt. Ltd.</h2>
+                <h3>Payslip for {period['month']}</h3>
+            </div>
+            
+            <div>
+                <h4>Employee Details</h4>
+                <p><strong>Name:</strong> {employee['name']}</p>
+                <p><strong>Employee Code:</strong> {employee['employee_code']}</p>
+                <p><strong>Designation:</strong> {employee['designation']}</p>
+                <p><strong>Department:</strong> {employee['department']}</p>
+            </div>
+            
+            <div>
+                <h4>Attendance Summary</h4>
+                <p><strong>Total Working Days:</strong> {period['total_working_days']}</p>
+                <p><strong>Actual Working Days:</strong> {period['actual_working_days']}</p>
+                <p><strong>Leave Days:</strong> {period['leave_days']}</p>
+                <p><strong>Overtime Hours:</strong> {period['overtime_hours']}</p>
+            </div>
+            
+            <table class="payslip-table">
+                <tr>
+                    <th colspan="2">Earnings</th>
+                    <th colspan="2">Deductions</th>
+                </tr>
+                <tr>
+                    <td>Basic Salary</td>
+                    <td class="amount">₹{earnings['basic_salary']:,.2f}</td>
+                    <td>PF</td>
+                    <td class="amount">₹{deductions['pf']:,.2f}</td>
+                </tr>
+                <tr>
+                    <td>HRA</td>
+                    <td class="amount">₹{earnings['hra']:,.2f}</td>
+                    <td>ESI</td>
+                    <td class="amount">₹{deductions['esi']:,.2f}</td>
+                </tr>
+                <tr>
+                    <td>Transport Allowance</td>
+                    <td class="amount">₹{earnings['transport_allowance']:,.2f}</td>
+                    <td>Professional Tax</td>
+                    <td class="amount">₹{deductions['professional_tax']:,.2f}</td>
+                </tr>
+                <tr>
+                    <td>Medical Allowance</td>
+                    <td class="amount">₹{earnings['medical_allowance']:,.2f}</td>
+                    <td>Income Tax</td>
+                    <td class="amount">₹{deductions['income_tax']:,.2f}</td>
+                </tr>
+                <tr>
+                    <td>Special Allowance</td>
+                    <td class="amount">₹{earnings['special_allowance']:,.2f}</td>
+                    <td>Loan Deduction</td>
+                    <td class="amount">₹{deductions['loan_deduction']:,.2f}</td>
+                </tr>
+                <tr>
+                    <td>Overtime Amount</td>
+                    <td class="amount">₹{earnings['overtime_amount']:,.2f}</td>
+                    <td>Other Deductions</td>
+                    <td class="amount">₹{deductions['other_deductions']:,.2f}</td>
+                </tr>
+                <tr>
+                    <td>Other Allowances</td>
+                    <td class="amount">₹{earnings['other_allowances']:,.2f}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr style="font-weight: bold;">
+                    <td>Total Earnings</td>
+                    <td class="amount">₹{earnings['total']:,.2f}</td>
+                    <td>Total Deductions</td>
+                    <td class="amount">₹{deductions['total']:,.2f}</td>
+                </tr>
+            </table>
+            
+            <div class="summary">
+                <h4>Summary</h4>
+                <p><strong>Gross Salary:</strong> ₹{summary['gross_salary']:,.2f}</p>
+                <p><strong>Total Deductions:</strong> ₹{summary['total_deductions']:,.2f}</p>
+                <p style="font-size: 18px; color: #28a745;"><strong>Net Salary:</strong> ₹{summary['net_salary']:,.2f}</p>
+            </div>
+            
+            <div style="margin-top: 30px; font-size: 12px; color: #666;">
+                <p>This is a system-generated payslip. For any queries, please contact HR department.</p>
+                <p>Generated on: {payslip_data['generated_on']}</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html_template
+
+    def get_payroll_trends(self, employee_id: Optional[int] = None, months: int = 12) -> Dict[str, Any]:
+        """Get payroll trends analysis"""
+        try:
+            query = self.db.query(models.Payroll)
+            
+            if employee_id:
+                query = query.filter(models.Payroll.employee_id == employee_id)
+            
+            # Get last N months of payroll data
+            payrolls = query.order_by(models.Payroll.month.desc()).limit(months * 100).all()
+            
+            # Group by month
+            monthly_data = {}
+            for payroll in payrolls:
+                month = payroll.month
+                if month not in monthly_data:
+                    monthly_data[month] = {
+                        "month": month,
+                        "total_employees": 0,
+                        "total_gross": 0,
+                        "total_net": 0,
+                        "total_deductions": 0,
+                        "avg_gross": 0,
+                        "avg_net": 0
+                    }
+                
+                monthly_data[month]["total_employees"] += 1
+                monthly_data[month]["total_gross"] += payroll.gross_salary
+                monthly_data[month]["total_net"] += payroll.net_salary
+                monthly_data[month]["total_deductions"] += payroll.total_deductions
+            
+            # Calculate averages
+            for month_data in monthly_data.values():
+                if month_data["total_employees"] > 0:
+                    month_data["avg_gross"] = month_data["total_gross"] / month_data["total_employees"]
+                    month_data["avg_net"] = month_data["total_net"] / month_data["total_employees"]
+            
+            # Sort by month
+            trends = sorted(monthly_data.values(), key=lambda x: x["month"])
+            
+            return {
+                "success": True,
+                "trends": trends,
+                "summary": {
+                    "total_months": len(trends),
+                    "employee_id": employee_id,
+                    "period": f"Last {months} months"
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting payroll trends: {str(e)}")
+            return {"success": False, "error": str(e)}
+
+    def bulk_distribute_payslips(self, month: str, distribution_method: str = "email") -> Dict[str, Any]:
+        """Distribute payslips for all employees in a month"""
+        try:
+            # Get all approved payrolls for the month
+            payrolls = self.db.query(models.Payroll).filter(
+                models.Payroll.month == month,
+                models.Payroll.status == "approved"
+            ).all()
+            
+            if not payrolls:
+                return {"success": False, "error": "No approved payrolls found for the month"}
+            
+            results = {
+                "successful": [],
+                "failed": [],
+                "total": len(payrolls)
+            }
+            
+            for payroll in payrolls:
+                try:
+                    result = self.distribute_payslip(payroll.id, distribution_method)
+                    if result["success"]:
+                        results["successful"].append({
+                            "payroll_id": payroll.id,
+                            "employee_id": payroll.employee_id,
+                            "distribution_id": result["distribution_id"]
+                        })
+                    else:
+                        results["failed"].append({
+                            "payroll_id": payroll.id,
+                            "employee_id": payroll.employee_id,
+                            "error": result["error"]
+                        })
+                except Exception as e:
+                    results["failed"].append({
+                        "payroll_id": payroll.id,
+                        "employee_id": payroll.employee_id,
+                        "error": str(e)
+                    })
+            
+            return {
+                "success": True,
+                "results": results,
+                "message": f"Distributed {len(results['successful'])} payslips successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in bulk payslip distribution: {str(e)}")
+            return {"success": False, "error": str(e)}
