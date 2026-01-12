@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "dhanush-backend-hr"
+version = "1.0.0"
+description = "AI HR Management System Backend"
+
+[project.scripts]
+app = "main:app"
