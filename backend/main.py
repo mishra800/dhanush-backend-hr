@@ -53,6 +53,7 @@ origins = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175", # Future proofing
+    "https://dhanush-hr.netlify.app",  # Your Netlify frontend
     "https://*.netlify.app",  # Netlify deployment
     "https://*.vercel.app",   # Vercel deployment
 ]

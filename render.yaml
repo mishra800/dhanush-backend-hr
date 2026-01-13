@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: dhanush-hr-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        value: dhanush-hr-secret-key-2024-production
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: FRONTEND_URL
+        value: https://dhanush-hr.netlify.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dhanush-hr-database
+          property: connectionString
+
+databases:
+  - name: dhanush-hr-database
+    plan: free
+    region: oregon
