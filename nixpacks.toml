@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ['python311', 'pip', 'gcc', 'cmake', 'pkg-config', 'libopenblas', 'lapack']
+nixPkgs = ['python311', 'pip']
 
 [phases.install]
 cmds = [
     'cd backend',
     'pip install --upgrade pip',
-    'pip install -r requirements.txt'
+    'pip install -r requirements-simple.txt'
 ]
 
 [phases.build]
