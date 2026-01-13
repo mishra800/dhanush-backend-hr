@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from app import database, models, schemas
 from app.employee_service import EmployeeService
-from app.role_utils import require_roless
+from app.role_utils import require_roles
 
 router = APIRouter(
     prefix="/employees",

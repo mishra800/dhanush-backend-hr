@@ -2,14 +2,19 @@
 Face Recognition Utilities for Attendance System
 Uses face_recognition library for face matching
 """
-import face_recognition
+try:
+    import face_recognition
+    FACE_RECOGNITION_AVAILABLE = True
+except ImportError:
+    FACE_RECOGNITION_AVAILABLE = False
+    print("WARNING: face_recognition library not installed. Face recognition features will be disabled.")
+    print("To enable face recognition, run: pip install face-recognition opencv-python Pillow")
+
 import numpy as np
 import base64
 from io import BytesIO
 from PIL import Image
 import os
-
-FACE_RECOGNITION_AVAILABLE = True
 
 def decode_base64_image(base64_string):
     """Decode base64 image string to PIL Image"""
@@ -27,6 +32,9 @@ def decode_base64_image(base64_string):
 
 def get_face_encoding(image_array):
     """Extract face encoding from image array"""
+    if not FACE_RECOGNITION_AVAILABLE:
+        return None, "Face recognition library not installed. Please install: pip install face-recognition"
+    
     try:
         # Find all face locations in the image
         face_locations = face_recognition.face_locations(image_array)
@@ -60,6 +68,13 @@ def compare_faces(profile_image_base64, attendance_image_base64, tolerance=0.6):
     Returns:
         dict with match result and details
     """
+    if not FACE_RECOGNITION_AVAILABLE:
+        return {
+            "match": False,
+            "confidence": 0,
+            "message": "Face recognition library not installed. Please install: pip install face-recognition opencv-python Pillow"
+        }
+    
     try:
         # Decode images
         profile_image = decode_base64_image(profile_image_base64)
