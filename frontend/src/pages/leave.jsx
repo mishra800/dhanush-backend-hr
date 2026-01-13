@@ -64,25 +64,53 @@ export default function Leave() {
   const fetchData = async () => {
     try {
       setError(''); // Clear any previous errors
-      const requests = [
-        api.get(`/leave/employee/${employeeId}`),
-        api.get(`/leave/balances/${employeeId}`),
-        api.get(`/leave/holidays`)
-      ];
+      setLoading(true);
       
-      // Add pending leaves request for managers
-      if (isManager) {
-        requests.push(api.get('/leave/pending'));
+      const requests = [];
+      
+      // Always try to get holidays first as it doesn't require employee ID
+      requests.push(api.get('/leave/holidays').catch(err => {
+        console.error('Error fetching holidays:', err);
+        return { data: [] };
+      }));
+      
+      // Only fetch employee-specific data if we have an employee ID
+      if (employeeId) {
+        requests.push(
+          api.get(`/leave/employee/${employeeId}`).catch(err => {
+            console.error('Error fetching leaves:', err);
+            return { data: [] };
+          }),
+          api.get(`/leave/balances/${employeeId}`).catch(err => {
+            console.error('Error fetching balances:', err);
+            return { data: [] };
+          })
+        );
+        
+        // Add pending leaves request for managers
+        if (isManager) {
+          requests.push(api.get('/leave/pending').catch(err => {
+            console.error('Error fetching pending leaves:', err);
+            return { data: [] };
+          }));
+        }
       }
       
       const responses = await Promise.all(requests);
-      setLeaves(responses[0].data || []);
-      setBalances(responses[1].data || []);
-      setHolidays(responses[2].data || []);
       
-      if (isManager && responses[3]) {
-        setPendingLeaves(responses[3].data || []);
+      // Set holidays (always first response)
+      setHolidays(responses[0].data || []);
+      
+      // Set employee-specific data if available
+      if (employeeId && responses.length > 1) {
+        setLeaves(responses[1].data || []);
+        setBalances(responses[2].data || []);
+        
+        if (isManager && responses[3]) {
+          setPendingLeaves(responses[3].data || []);
+        }
       }
+      
     } catch (error) {
       console.error('Error fetching leave data:', error);
       setError('Unable to load leave data. Please check your connection and try again.');
@@ -91,6 +119,8 @@ export default function Leave() {
       setBalances([]);
       setHolidays([]);
       setPendingLeaves([]);
+    } finally {
+      setLoading(false);
     }
   };
   

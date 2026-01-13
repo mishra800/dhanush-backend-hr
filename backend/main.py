@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.database import engine, Base
+from datetime import datetime
 import os
 from app.routers import (
     auth,
@@ -37,7 +38,8 @@ from app.routers import (
     ai_assistant,
     meetings,
     meeting_rooms,
-    documents
+    documents,
+    predictive_analytics
 )
 
 # Create database tables
@@ -60,21 +62,29 @@ import os
 if os.getenv("FRONTEND_URL"):
     origins.append(os.getenv("FRONTEND_URL"))
 
-# Allow all origins in production (you can restrict this later)
-if os.getenv("ENVIRONMENT") == "production":
+# Allow all origins in development for easier testing
+if os.getenv("ENVIRONMENT") != "production":
     origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to AI HR Management System API"}
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "message": "API is running successfully"
+    }
 
 # Include routers
 app.include_router(auth.router)
@@ -111,6 +121,7 @@ app.include_router(ai_assistant.router)
 app.include_router(meetings.router)
 app.include_router(meeting_rooms.router)
 app.include_router(documents.router)
+app.include_router(predictive_analytics.router)
 
 # Mount static files for serving uploaded resumes
 uploads_dir = "uploads"

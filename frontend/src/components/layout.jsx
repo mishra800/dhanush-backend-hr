@@ -116,13 +116,6 @@ export default function Layout() {
       color: 'text-indigo-600'
     },
     { 
-      name: 'Employee Management', 
-      href: '/dashboard/employee-management', 
-      icon: '👥', 
-      roles: ['admin', 'hr'],
-      color: 'text-indigo-700'
-    },
-    { 
       name: 'Attendance', 
       href: '/dashboard/attendance', 
       icon: '📅', 
@@ -184,13 +177,6 @@ export default function Layout() {
       icon: '💻', 
       roles: ['admin', 'hr', 'manager', 'employee', 'assets_team'],
       color: 'text-slate-600'
-    },
-    { 
-      name: 'Asset Acknowledgment', 
-      href: '/dashboard/asset-acknowledgment', 
-      icon: '📋', 
-      roles: ['employee', 'admin', 'hr'],
-      color: 'text-blue-600'
     },
     { 
       name: 'Announcements', 

@@ -625,7 +625,7 @@ async def upload_profile_image(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Upload employee profile image for face recognition - Only employees, managers, HR, and admin"""
+    """Upload employee profile image for face recognition with enhanced validation - Only employees, managers, HR, and admin"""
     # Validate attendance system access
     validate_attendance_access(current_user.role)
     
@@ -645,23 +645,39 @@ async def upload_profile_image(
         if not employee:
             raise HTTPException(status_code=404, detail="Employee profile not found")
         
+        # Validate image quality and suitability
+        validation_result = face_recognition_utils.validate_profile_image(data.image)
+        
+        if not validation_result["valid"]:
+            raise HTTPException(
+                status_code=400, 
+                detail={
+                    "message": validation_result["message"],
+                    "issues": validation_result["issues"],
+                    "recommendations": validation_result["recommendations"],
+                    "quality_score": validation_result.get("quality_score", 0)
+                }
+            )
+        
         # Save profile image
         file_path = face_recognition_utils.save_profile_image(employee.id, data.image)
         
         if not file_path:
             raise HTTPException(status_code=500, detail="Failed to save profile image")
         
-        # Verify face is detectable
-        image_array = face_recognition_utils.decode_base64_image(data.image)
-        encoding, error = face_recognition_utils.get_face_encoding(image_array)
-        
-        if error:
-            raise HTTPException(status_code=400, detail=error)
+        # Update employee record
+        employee.profile_image_url = file_path
+        db.commit()
         
         return {
-            "message": "Profile image uploaded successfully",
+            "message": "Profile image uploaded and validated successfully",
             "employee_id": employee.id,
-            "file_path": file_path
+            "file_path": file_path,
+            "validation_details": {
+                "quality_score": validation_result["quality_score"],
+                "face_detected": validation_result["face_detected"],
+                "recommendations": validation_result.get("recommendations", [])
+            }
         }
     except HTTPException:
         raise
@@ -801,23 +817,139 @@ async def mark_attendance_with_face_recognition(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/check-profile-image")
-async def check_profile_image(
+@router.get("/face-recognition-analytics/{employee_id}")
+async def get_face_recognition_analytics(
+    employee_id: int,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Check if employee has uploaded profile image - Only employees, managers, HR, and admin"""
-    # Validate attendance system access
-    validate_attendance_access(current_user.role)
+    """Get face recognition analytics and security metrics for an employee - HR and admin only"""
     
-    # Check specific permission
-    if not has_permission(current_user.role, "can_mark_attendance"):
+    # Check permissions - only HR and admin can view analytics
+    if current_user.role not in ['hr', 'admin']:
         raise HTTPException(
             status_code=403, 
-            detail=f"Role '{current_user.role}' is not authorized to check profile image"
+            detail="Only HR and admin can view face recognition analytics"
         )
     
     try:
+        # Get employee
+        employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        # Get recent attendance records with face recognition
+        recent_records = db.query(models.Attendance).filter(
+            models.Attendance.employee_id == employee_id,
+            models.Attendance.verification_method == "face_recognition"
+        ).order_by(models.Attendance.date.desc()).limit(30).all()
+        
+        # Calculate analytics
+        total_face_recognitions = len(recent_records)
+        
+        if total_face_recognitions == 0:
+            return {
+                "employee_id": employee_id,
+                "employee_name": f"{employee.first_name} {employee.last_name}",
+                "has_profile_image": employee.profile_image_url is not None,
+                "total_face_recognitions": 0,
+                "analytics": {
+                    "message": "No face recognition data available"
+                }
+            }
+        
+        # Confidence scores
+        confidence_scores = [r.face_match_confidence for r in recent_records if r.face_match_confidence]
+        avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
+        min_confidence = min(confidence_scores) if confidence_scores else 0
+        max_confidence = max(confidence_scores) if confidence_scores else 0
+        
+        # Security flags
+        fraud_suspected_count = len([r for r in recent_records if r.is_fraud_suspected])
+        
+        # Confidence distribution
+        high_confidence = len([c for c in confidence_scores if c >= 85])
+        medium_confidence = len([c for c in confidence_scores if 70 <= c < 85])
+        low_confidence = len([c for c in confidence_scores if c < 70])
+        
+        return {
+            "employee_id": employee_id,
+            "employee_name": f"{employee.first_name} {employee.last_name}",
+            "has_profile_image": employee.profile_image_url is not None,
+            "total_face_recognitions": total_face_recognitions,
+            "analytics": {
+                "confidence_metrics": {
+                    "average": round(avg_confidence, 2),
+                    "minimum": round(min_confidence, 2),
+                    "maximum": round(max_confidence, 2),
+                    "distribution": {
+                        "high_confidence_85_plus": high_confidence,
+                        "medium_confidence_70_84": medium_confidence,
+                        "low_confidence_below_70": low_confidence
+                    }
+                },
+                "security_metrics": {
+                    "fraud_suspected_count": fraud_suspected_count,
+                    "fraud_rate_percentage": round((fraud_suspected_count / total_face_recognitions) * 100, 2),
+                    "security_score": "High" if fraud_suspected_count == 0 and avg_confidence > 80 else "Medium" if fraud_suspected_count < 2 else "Low"
+                },
+                "recommendations": []
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/validate-image-quality")
+async def validate_image_quality(
+    data: schemas.ProfileImageUpload,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Validate image quality without saving - for real-time feedback"""
+    
+    validate_attendance_access(current_user.role)
+    
+    try:
+        # Validate image quality
+        validation_result = face_recognition_utils.validate_profile_image(data.image)
+        
+        return {
+            "valid": validation_result["valid"],
+            "message": validation_result["message"],
+            "quality_score": validation_result.get("quality_score", 0),
+            "face_detected": validation_result.get("face_detected", False),
+            "issues": validation_result.get("issues", []),
+            "recommendations": validation_result.get("recommendations", []),
+            "quality_details": validation_result.get("quality_details", {})
+        }
+        
+    except Exception as e:
+        return {
+            "valid": False,
+            "message": f"Validation error: {str(e)}",
+            "quality_score": 0,
+            "face_detected": False,
+            "issues": ["Validation failed"],
+            "recommendations": ["Try uploading the image again"]
+        }
+    
+@router.get("/face-recognition-status")
+async def get_face_recognition_status(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get face recognition system status and configuration"""
+    
+    validate_attendance_access(current_user.role)
+    
+    try:
+        # Check if face recognition is available
+        from app.face_recognition_utils import FACE_RECOGNITION_AVAILABLE
+        
+        # Get employee profile
         employee = db.query(models.Employee).filter(
             models.Employee.user_id == current_user.id
         ).first()
@@ -825,15 +957,81 @@ async def check_profile_image(
         if not employee:
             raise HTTPException(status_code=404, detail="Employee profile not found")
         
-        profile_image = face_recognition_utils.load_profile_image(employee.id)
+        # Check profile image status
+        has_profile_image = employee.profile_image_url is not None
+        profile_image_data = None
+        
+        if has_profile_image:
+            profile_image_data = face_recognition_utils.load_profile_image(employee.id)
+        
+        # Get recent face recognition usage
+        recent_usage = db.query(models.Attendance).filter(
+            models.Attendance.employee_id == employee.id,
+            models.Attendance.verification_method == "face_recognition"
+        ).order_by(models.Attendance.date.desc()).limit(5).all()
+        
+        usage_history = []
+        for record in recent_usage:
+            usage_history.append({
+                "date": record.date.isoformat(),
+                "confidence": record.face_match_confidence,
+                "status": record.status,
+                "fraud_suspected": record.is_fraud_suspected
+            })
         
         return {
-            "has_profile_image": profile_image is not None,
-            "employee_id": employee.id,
-            "profile_image_url": f"data:image/jpeg;base64,{profile_image}" if profile_image else None
+            "system_status": {
+                "face_recognition_available": FACE_RECOGNITION_AVAILABLE,
+                "library_status": "Installed" if FACE_RECOGNITION_AVAILABLE else "Not Installed",
+                "features_enabled": [
+                    "Face Detection",
+                    "Face Matching",
+                    "Quality Analysis",
+                    "Liveness Detection",
+                    "Anti-Spoofing"
+                ] if FACE_RECOGNITION_AVAILABLE else []
+            },
+            "user_status": {
+                "employee_id": employee.id,
+                "has_profile_image": has_profile_image,
+                "profile_image_ready": profile_image_data is not None,
+                "can_use_face_recognition": has_profile_image and FACE_RECOGNITION_AVAILABLE
+            },
+            "configuration": {
+                "face_confidence_threshold": 70,
+                "quality_threshold": 60,
+                "liveness_threshold": 30,
+                "tolerance": 0.6,
+                "security_features": {
+                    "quality_check": True,
+                    "liveness_detection": True,
+                    "multiple_face_detection": True,
+                    "confidence_adjustment": True
+                }
+            },
+            "usage_statistics": {
+                "recent_usage_count": len(usage_history),
+                "average_confidence": round(
+                    sum([u["confidence"] for u in usage_history if u["confidence"]]) / 
+                    len([u for u in usage_history if u["confidence"]]), 2
+                ) if usage_history and any(u["confidence"] for u in usage_history) else 0,
+                "fraud_incidents": len([u for u in usage_history if u["fraud_suspected"]])
+            },
+            "recent_usage": usage_history
         }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "system_status": {
+                "face_recognition_available": False,
+                "library_status": "Error",
+                "error": str(e)
+            },
+            "user_status": {
+                "has_profile_image": False,
+                "can_use_face_recognition": False
+            }
+        }
 
 # ============================================
 # AUDIT LOG FUNCTIONALITY

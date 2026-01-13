@@ -139,35 +139,44 @@ def get_holidays(
     db: Session = Depends(database.get_db)
 ):
     """Get holidays for a specific year"""
-    
-    if not year:
-        year = datetime.now().year
-    
-    holidays = db.query(models.Holiday).filter(
-        extract('year', models.Holiday.date) == year
-    ).order_by(models.Holiday.date).all()
-    
-    if not holidays:
-        # Seed holidays for current year
-        current_year = datetime.now().year
-        seed_data = [
-            {"date": date(current_year, 1, 1), "name": "New Year's Day", "type": "Public"},
-            {"date": date(current_year, 1, 26), "name": "Republic Day", "type": "Public"},
-            {"date": date(current_year, 8, 15), "name": "Independence Day", "type": "Public"},
-            {"date": date(current_year, 10, 2), "name": "Gandhi Jayanti", "type": "Public"},
-            {"date": date(current_year, 12, 25), "name": "Christmas Day", "type": "Public"}
-        ]
+    try:
+        if not year:
+            year = datetime.now().year
         
-        for data in seed_data:
-            holiday = models.Holiday(**data)
-            db.add(holiday)
-        
-        db.commit()
         holidays = db.query(models.Holiday).filter(
             extract('year', models.Holiday.date) == year
         ).order_by(models.Holiday.date).all()
-    
-    return holidays
+        
+        if not holidays:
+            # Seed holidays for current year
+            current_year = datetime.now().year
+            seed_data = [
+                {"date": date(current_year, 1, 1), "name": "New Year's Day", "type": "Public"},
+                {"date": date(current_year, 1, 26), "name": "Republic Day", "type": "Public"},
+                {"date": date(current_year, 8, 15), "name": "Independence Day", "type": "Public"},
+                {"date": date(current_year, 10, 2), "name": "Gandhi Jayanti", "type": "Public"},
+                {"date": date(current_year, 12, 25), "name": "Christmas Day", "type": "Public"}
+            ]
+            
+            try:
+                for data in seed_data:
+                    holiday = models.Holiday(**data)
+                    db.add(holiday)
+                
+                db.commit()
+                holidays = db.query(models.Holiday).filter(
+                    extract('year', models.Holiday.date) == year
+                ).order_by(models.Holiday.date).all()
+            except Exception as e:
+                print(f"Error seeding holidays: {e}")
+                db.rollback()
+                # Return empty list if seeding fails
+                return []
+        
+        return holidays
+    except Exception as e:
+        print(f"Error fetching holidays: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching holidays: {str(e)}")
 
 @router.post("/holidays", response_model=schemas.HolidayOut)
 def create_holiday(

@@ -50,8 +50,9 @@ def get_db():
 def test_db_connection():
     """Test database connection"""
     try:
+        from sqlalchemy import text
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         logger.info("Database connection successful")
         return True

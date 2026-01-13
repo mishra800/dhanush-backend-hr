@@ -98,6 +98,80 @@ class InterviewCreate(InterviewBase):
     application_id: int
     interviewer_id: int
 
+# --- Predictive Analytics Schemas ---
+
+class AttritionPredictionOut(BaseModel):
+    id: int
+    employee_id: int
+    prediction_date: datetime
+    attrition_probability: float
+    risk_level: str
+    contributing_factors: List[str]
+    confidence_score: float
+    model_version: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PerformanceForecastOut(BaseModel):
+    id: int
+    employee_id: int
+    forecast_date: datetime
+    forecast_period: str
+    predicted_rating: float
+    predicted_kpi_score: float
+    growth_trajectory: str
+    confidence_interval: Dict[str, float]
+    model_version: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class SalaryOptimizationOut(BaseModel):
+    id: int
+    employee_id: int
+    analysis_date: datetime
+    current_salary: float
+    recommended_salary: float
+    market_percentile: float
+    performance_factor: float
+    skill_premium: float
+    retention_risk_adjustment: float
+    justification: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class RecruitmentPredictionOut(BaseModel):
+    id: int
+    application_id: int
+    prediction_date: datetime
+    success_probability: float
+    performance_prediction: float
+    cultural_fit_score: float
+    retention_likelihood: float
+    risk_factors: List[str]
+    strengths: List[str]
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TeamDynamicsOut(BaseModel):
+    id: int
+    department: str
+    analysis_date: datetime
+    collaboration_score: float
+    communication_effectiveness: float
+    conflict_indicators: List[str]
+    productivity_trends: Dict[str, Any]
+    team_cohesion_score: float
+    recommendations: List[str]
+    key_influencers: List[str]
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PredictiveAnalyticsRequest(BaseModel):
+    employee_ids: Optional[List[int]] = None
+    department: Optional[str] = None
+    analysis_type: str  # attrition, performance, salary, team_dynamics
+    forecast_period: Optional[str] = "next_quarter"
+
 class InterviewOut(InterviewBase):
     id: int
     application_id: int
@@ -652,14 +726,12 @@ class HolidayOut(BaseModel):
     date: date
     name: str
     type: str
-    is_optional: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 class HolidayCreate(BaseModel):
     name: str
     date: date
     type: str = "public"
-    is_optional: bool = False
 
 class GoalBase(BaseModel):
     title: str
@@ -1436,3 +1508,94 @@ class BulkEmployeeImport(BaseModel):
     manager_email: Optional[str] = None
     employment_type: Optional[str] = "full_time"
     work_location: Optional[str] = None
+
+# --- Predictive Analytics Schemas ---
+
+class PredictiveAnalyticsRequest(BaseModel):
+    employee_ids: Optional[List[int]] = None
+    parameters: Optional[Dict[str, Any]] = {}
+
+class AttritionPredictionOut(BaseModel):
+    employee_id: int
+    employee_name: str
+    attrition_probability: float
+    risk_level: str
+    contributing_factors: List[str]
+    confidence_score: float
+    prediction_date: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PerformanceForecastOut(BaseModel):
+    employee_id: int
+    employee_name: str
+    forecast_period: str
+    predicted_rating: float
+    predicted_kpi_score: float
+    growth_trajectory: str
+    confidence_interval: Dict[str, float]
+    forecast_date: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class SalaryOptimizationOut(BaseModel):
+    employee_id: int
+    employee_name: str
+    current_salary: float
+    recommended_salary: float
+    adjustment_percentage: float
+    market_percentile: float
+    performance_factor: float
+    skill_premium: float
+    retention_risk_adjustment: float
+    justification: str
+    analysis_date: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class RecruitmentPredictionOut(BaseModel):
+    application_id: int
+    candidate_name: str
+    success_probability: float
+    performance_prediction: float
+    cultural_fit_score: float
+    retention_likelihood: float
+    risk_factors: List[str]
+    strengths: List[str]
+    overall_recommendation: str
+    prediction_date: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class TeamDynamicsOut(BaseModel):
+    department: str
+    team_size: int
+    collaboration_score: float
+    communication_effectiveness: float
+    team_cohesion_score: float
+    conflict_indicators: List[str]
+    productivity_trends: Dict[str, Any]
+    key_influencers: List[str]
+    recommendations: List[str]
+    overall_health: float
+    conflict_risk: str
+    analysis_date: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Request schemas for predictive analytics
+class AttritionPredictionRequest(BaseModel):
+    employee_ids: Optional[List[int]] = None
+
+class PerformanceForecastRequest(BaseModel):
+    employee_ids: Optional[List[int]] = None
+    forecast_period: str = "next_quarter"
+
+class SalaryOptimizationRequest(BaseModel):
+    employee_ids: Optional[List[int]] = None
+
+class RecruitmentPredictionRequest(BaseModel):
+    application_ids: Optional[List[int]] = None
+
+class TeamDynamicsRequest(BaseModel):
+    departments: Optional[List[str]] = None

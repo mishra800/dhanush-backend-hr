@@ -98,10 +98,99 @@ class AIInterview(Base):
     status = Column(String, default="pending") # pending, in_progress, completed
     overall_score = Column(Float, default=0.0)
     emotional_tone = Column(String, nullable=True) # e.g., "Confident", "Nervous"
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    application = relationship("Application")
+    
+    # Add the logs relationship properly
     logs = relationship("AIInterviewLog", back_populates="interview")
+
+# Predictive Analytics Models
+class AttritionPrediction(Base):
+    __tablename__ = "attrition_predictions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    prediction_date = Column(DateTime, default=datetime.utcnow)
+    attrition_probability = Column(Float)  # 0.0 to 1.0
+    risk_level = Column(String)  # low, medium, high, critical
+    contributing_factors = Column(JSON, default=[])
+    confidence_score = Column(Float)
+    model_version = Column(String, default="v1.0")
+    
+    employee = relationship("Employee")
+
+class PerformanceForecast(Base):
+    __tablename__ = "performance_forecasts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    forecast_date = Column(DateTime, default=datetime.utcnow)
+    forecast_period = Column(String)  # next_quarter, next_year
+    predicted_rating = Column(Float)
+    predicted_kpi_score = Column(Float)
+    growth_trajectory = Column(String)  # improving, stable, declining
+    confidence_interval = Column(JSON, default={})
+    model_version = Column(String, default="v1.0")
+    
+    employee = relationship("Employee")
+
+class SalaryOptimization(Base):
+    __tablename__ = "salary_optimizations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"))
+    analysis_date = Column(DateTime, default=datetime.utcnow)
+    current_salary = Column(Float)
+    recommended_salary = Column(Float)
+    market_percentile = Column(Float)
+    performance_factor = Column(Float)
+    skill_premium = Column(Float)
+    retention_risk_adjustment = Column(Float)
+    justification = Column(Text)
+    
+    employee = relationship("Employee")
+
+class RecruitmentPrediction(Base):
+    __tablename__ = "recruitment_predictions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    application_id = Column(Integer, ForeignKey("applications.id"))
+    prediction_date = Column(DateTime, default=datetime.utcnow)
+    success_probability = Column(Float)  # 0.0 to 1.0
+    performance_prediction = Column(Float)
+    cultural_fit_score = Column(Float)
+    retention_likelihood = Column(Float)
+    risk_factors = Column(JSON, default=[])
+    strengths = Column(JSON, default=[])
+    
+    application = relationship("Application")
+
+class TeamDynamics(Base):
+    __tablename__ = "team_dynamics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    department = Column(String)
+    analysis_date = Column(DateTime, default=datetime.utcnow)
+    collaboration_score = Column(Float)
+    communication_effectiveness = Column(Float)
+    conflict_indicators = Column(JSON, default=[])
+    productivity_trends = Column(JSON, default={})
+    team_cohesion_score = Column(Float)
+    recommendations = Column(JSON, default=[])
+    key_influencers = Column(JSON, default=[])
+    
+class PredictiveModel(Base):
+    __tablename__ = "predictive_models"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_name = Column(String, unique=True)
+    model_type = Column(String)  # attrition, performance, salary, recruitment, team_dynamics
+    version = Column(String)
+    accuracy_score = Column(Float)
+    training_date = Column(DateTime, default=datetime.utcnow)
+    feature_importance = Column(JSON, default={})
+    hyperparameters = Column(JSON, default={})
+    is_active = Column(Boolean, default=True)
+    model_path = Column(String)  # Path to saved model file
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class AIInterviewLog(Base):
     __tablename__ = "ai_interview_logs"
@@ -509,9 +598,7 @@ class Holiday(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date)
     name = Column(String)
-    description = Column(String, nullable=True)
     type = Column(String, default="public") # public, optional
-    is_optional = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class AttendanceCorrection(Base):
